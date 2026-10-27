@@ -1,3 +1,17 @@
+# .NET build output
+bin/
+obj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# Local configuration and secrets
+appsettings.Development.json
+.env
+appsettings.json
+=======
 # Dependencies
 node_modules/
 

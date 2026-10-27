@@ -1,0 +1,6 @@
+@Letter_Request_Management_System_HostAddress = http://localhost:5169
+
+GET {{Letter_Request_Management_System_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
