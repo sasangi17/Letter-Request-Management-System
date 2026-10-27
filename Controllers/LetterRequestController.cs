@@ -1,6 +1,8 @@
-﻿using System.Security.Claims;
+﻿
+using System.Security.Claims;
 using Letter_Request_Management_System.Business;
 using Letter_Request_Management_System.Models.Dto;
+using Letter_Request_Management_System.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,11 +14,17 @@ namespace Letter_Request_Management_System.Controllers
     public class LetterRequestController : ControllerBase
     {
         private readonly LetterRequestBusiness _business;
+        private readonly AdminSignatureFileService _signatureFileService;
+        private readonly SignedLetterPdfService _signedLetterPdfService;
 
         public LetterRequestController(
-            LetterRequestBusiness business)
+            LetterRequestBusiness business,
+            AdminSignatureFileService signatureFileService,
+            SignedLetterPdfService signedLetterPdfService)
         {
             _business = business;
+            _signatureFileService = signatureFileService;
+            _signedLetterPdfService = signedLetterPdfService;
         }
 
         private int GetLoggedInUserId()
@@ -26,7 +34,7 @@ namespace Letter_Request_Management_System.Controllers
 
             return int.TryParse(userId, out int id) ? id : 0;
         }
-        //Create a new letter request
+
         [HttpPost("createrequest")]
         public IActionResult CreateRequest(
             [FromBody] LetterRequestDto dto)
@@ -34,12 +42,14 @@ namespace Letter_Request_Management_System.Controllers
             int userId = GetLoggedInUserId();
 
             if (userId <= 0)
-            {
                 return Unauthorized();
-            }
+
+            if (dto == null || dto.LetterTypeId <= 0)
+                return BadRequest("A valid letter type is required.");
 
             int requestId = _business.CreateRequest(
-                userId, dto.LetterTypeId);
+                userId,
+                dto.LetterTypeId);
 
             if (requestId == 0)
             {
@@ -48,12 +58,14 @@ namespace Letter_Request_Management_System.Controllers
             }
 
             var request = _business.GetRequestById(
-                requestId, userId);
+                requestId,
+                userId);
 
             if (request == null)
             {
                 return StatusCode(
-                    500, "The request was created but could not be retrieved.");
+                    500,
+                    "The request was created but could not be retrieved.");
             }
 
             return CreatedAtAction(
@@ -68,9 +80,7 @@ namespace Letter_Request_Management_System.Controllers
             int userId = GetLoggedInUserId();
 
             if (userId <= 0)
-            {
                 return Unauthorized();
-            }
 
             return Ok(_business.GetMyRequests(userId));
         }
@@ -81,19 +91,73 @@ namespace Letter_Request_Management_System.Controllers
             int userId = GetLoggedInUserId();
 
             if (userId <= 0)
-            {
                 return Unauthorized();
-            }
 
             var request = _business.GetRequestById(id, userId);
 
             if (request == null)
-            {
-                return NotFound(
-                    "The letter request was not found.");
-            }
+                return NotFound("The letter request was not found.");
 
             return Ok(request);
+        }
+
+        [HttpGet("{id}/download")]
+        public IActionResult DownloadLetter(int id)
+        {
+            int userId = GetLoggedInUserId();
+
+            if (userId <= 0)
+                return Unauthorized();
+
+            if (id <= 0)
+                return BadRequest("Invalid letter request ID.");
+
+            var approvedLetter =
+                _business.GetApprovedLetterForDownload(id, userId);
+
+            if (approvedLetter == null)
+            {
+                return NotFound(
+                    "The letter was not found, is not approved, or has no saved signature reference.");
+            }
+
+            var letter = approvedLetter.Value;
+
+            string? signatureImagePath =
+                _signatureFileService.GetSignatureFullPath(
+                    letter.SignatureReference);
+
+            if (string.IsNullOrWhiteSpace(signatureImagePath) ||
+                !System.IO.File.Exists(signatureImagePath))
+            {
+                return NotFound(
+                    "The administrator's signature image could not be found. Please ask the administrator to upload the signature again.");
+            }
+
+            try
+            {
+                byte[] pdfBytes =
+                    _signedLetterPdfService.GenerateSignedPdfBytes(
+                        letter.LetterContent,
+                        letter.ApproverName,
+                        letter.ApprovedAt,
+                        signatureImagePath);
+
+                string fileName = $"Approved-Letter-{id}.pdf";
+
+                return File(
+                    pdfBytes,
+                    "application/pdf",
+                    fileName);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+
+                return StatusCode(
+                    500,
+                    "An error occurred while generating the approved letter PDF. Check the backend terminal for details.");
+            }
         }
     }
 }

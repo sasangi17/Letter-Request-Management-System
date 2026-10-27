@@ -6,6 +6,9 @@ using Letter_Request_Management_System.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using QuestPDF.Infrastructure;
+
+QuestPDF.Settings.License = LicenseType.Community;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -59,6 +62,7 @@ builder.Services.AddScoped<BaseSqlDL>();
 builder.Services.AddScoped<AuthRepository>();
 builder.Services.AddScoped<LetterRequestRepository>();
 builder.Services.AddScoped<LetterTypeRepository>();
+builder.Services.AddScoped<AdminSignatureRepository>();
 
 
 // Business
@@ -66,10 +70,13 @@ builder.Services.AddScoped<AuthBusiness>();
 builder.Services.AddScoped<AdminBusiness>();
 builder.Services.AddScoped<LetterTypeBusiness>();
 builder.Services.AddScoped<LetterRequestBusiness>();
+builder.Services.AddScoped<AdminSignatureBusiness>();
 
 
 // Services
 builder.Services.AddScoped<JwtService>();
+builder.Services.AddScoped<AdminSignatureFileService>();
+builder.Services.AddScoped<SignedLetterPdfService>();
 
 // JWT Configuration
 var jwtKey = builder.Configuration["Jwt:Key"]

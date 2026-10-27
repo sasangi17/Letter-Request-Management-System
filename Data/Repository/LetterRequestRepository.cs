@@ -1,7 +1,7 @@
-﻿using System.Data;
+﻿
+using System.Data;
 using Letter_Request_Management_System.Data.Repository.BaseSQLDbConnection;
 using Letter_Request_Management_System.Models.Dto;
-
 
 namespace Letter_Request_Management_System.Data.Repository
 {
@@ -35,11 +35,9 @@ namespace Letter_Request_Management_System.Data.Repository
                     ON lr.LetterTypeId = lt.LetterTypeId
                 ORDER BY lr.RequestDate DESC;";
 
-            var parameters =
-                new List<DbParametersSql.QueryParameters>();
-
-            DataTable table =
-                _baseSqlDL.ExecuteReader(query, parameters);
+            DataTable table = _baseSqlDL.ExecuteReader(
+                query,
+                new List<DbParametersSql.QueryParameters>());
 
             var requests = new List<AdminLetterRequestDto>();
 
@@ -66,152 +64,131 @@ namespace Letter_Request_Management_System.Data.Repository
         public int CreateRequest(int userId, int letterTypeId)
         {
             const string query = @"
-        INSERT INTO dbo.LetterRequests
-        (
-            UserId,
-            LetterTypeId,
-            Status,
-            LetterContentSnapshot
-        )
-        OUTPUT INSERTED.LetterRequestId
-        SELECT
-            u.UserId,
-            lt.LetterTypeId,
-            'Pending',
-            REPLACE(
-                REPLACE(
+                INSERT INTO dbo.LetterRequests
+                (
+                    UserId,
+                    LetterTypeId,
+                    Status,
+                    LetterContentSnapshot
+                )
+                OUTPUT INSERTED.LetterRequestId
+                SELECT
+                    u.UserId,
+                    lt.LetterTypeId,
+                    'Pending',
                     REPLACE(
                         REPLACE(
                             REPLACE(
                                 REPLACE(
-                                    lt.TemplateContent,
-                                    '{{FullName}}', u.FullName
+                                    REPLACE(
+                                        REPLACE(
+                                            lt.TemplateContent,
+                                            '{{FullName}}', u.FullName
+                                        ),
+                                        '{{EmpNo}}', u.EmpNo
+                                    ),
+                                    '{{Email}}', u.Email
                                 ),
-                                '{{EmpNo}}', u.EmpNo
+                                '{{Department}}',
+                                COALESCE(u.Department, '')
                             ),
-                            '{{Email}}', u.Email
+                            '{{Position}}',
+                            COALESCE(u.Position, '')
                         ),
-                        '{{Department}}', COALESCE(u.Department, '')
-                    ),
-                    '{{Position}}', COALESCE(u.Position, '')
-                ),
-                '{{JoinDate}}',
-                COALESCE(
-                    CONVERT(NVARCHAR(10), u.JoinDate, 23),
-                    ''
-                )
-            )
-        FROM dbo.Users AS u
-        CROSS JOIN dbo.LetterTypes AS lt
-        WHERE u.UserId = @UserId
-          AND lt.LetterTypeId = @LetterTypeId;";
+                        '{{JoinDate}}',
+                        COALESCE(
+                            CONVERT(NVARCHAR(10), u.JoinDate, 23),
+                            ''
+                        )
+                    )
+                FROM dbo.Users AS u
+                CROSS JOIN dbo.LetterTypes AS lt
+                WHERE u.UserId = @UserId
+                  AND lt.LetterTypeId = @LetterTypeId;";
 
             var parameters = new List<DbParametersSql.QueryParameters>
-    {
-        DbParametersSql.SetValues(
-            "@UserId", SqlDbType.Int, userId),
+            {
+                DbParametersSql.SetValues(
+                    "@UserId", SqlDbType.Int, userId),
 
-        DbParametersSql.SetValues(
-            "@LetterTypeId", SqlDbType.Int, letterTypeId)
-    };
+                DbParametersSql.SetValues(
+                    "@LetterTypeId", SqlDbType.Int, letterTypeId)
+            };
 
             DataTable table = _baseSqlDL.ExecuteReader(query, parameters);
 
             if (table.Rows.Count == 0)
-            {
                 return 0;
-            }
 
             return Convert.ToInt32(table.Rows[0]["LetterRequestId"]);
         }
-
 
         public LetterRequestResponseDto? GetRequestById(
             int letterRequestId,
             int userId)
         {
             const string query = @"
-        SELECT
-            lr.LetterRequestId,
-            lr.LetterTypeId,
-            lt.LetterTypeName,
-            lr.RequestDate,
-            lr.Status,
-            lr.LetterContentSnapshot AS LetterContent
-        FROM dbo.LetterRequests AS lr
-        INNER JOIN dbo.LetterTypes AS lt
-            ON lr.LetterTypeId = lt.LetterTypeId
-        WHERE lr.LetterRequestId = @LetterRequestId
-          AND lr.UserId = @UserId;";
+                SELECT
+                    lr.LetterRequestId,
+                    lr.LetterTypeId,
+                    lt.LetterTypeName,
+                    lr.RequestDate,
+                    lr.Status,
+                    lr.LetterContentSnapshot AS LetterContent
+                FROM dbo.LetterRequests AS lr
+                INNER JOIN dbo.LetterTypes AS lt
+                    ON lr.LetterTypeId = lt.LetterTypeId
+                WHERE lr.LetterRequestId = @LetterRequestId
+                  AND lr.UserId = @UserId;";
 
             var parameters = new List<DbParametersSql.QueryParameters>
-    {
-        DbParametersSql.SetValues(
-            "@LetterRequestId",
-            SqlDbType.Int,
-            letterRequestId),
+            {
+                DbParametersSql.SetValues(
+                    "@LetterRequestId", SqlDbType.Int, letterRequestId),
 
-        DbParametersSql.SetValues(
-            "@UserId",
-            SqlDbType.Int,
-            userId)
-    };
+                DbParametersSql.SetValues(
+                    "@UserId", SqlDbType.Int, userId)
+            };
 
             DataTable table = _baseSqlDL.ExecuteReader(query, parameters);
 
             if (table.Rows.Count == 0)
-            {
                 return null;
-            }
 
             DataRow row = table.Rows[0];
 
             return new LetterRequestResponseDto
             {
-                LetterRequestId =
-                    Convert.ToInt32(row["LetterRequestId"]),
-
-                LetterTypeId =
-                    Convert.ToInt32(row["LetterTypeId"]),
-
-                LetterTypeName =
-                    row["LetterTypeName"]?.ToString() ?? string.Empty,
-
-                RequestDate =
-                    Convert.ToDateTime(row["RequestDate"]),
-
-                Status =
-                    row["Status"]?.ToString() ?? string.Empty,
-
-                LetterContent =
-                    row["LetterContent"]?.ToString() ?? string.Empty
+                LetterRequestId = Convert.ToInt32(row["LetterRequestId"]),
+                LetterTypeId = Convert.ToInt32(row["LetterTypeId"]),
+                LetterTypeName = row["LetterTypeName"]?.ToString() ?? string.Empty,
+                RequestDate = Convert.ToDateTime(row["RequestDate"]),
+                Status = row["Status"]?.ToString() ?? string.Empty,
+                LetterContent = row["LetterContent"]?.ToString() ?? string.Empty
             };
         }
-
 
         public List<LetterRequestResponseDto> GetMyRequests(int userId)
         {
             const string query = @"
-        SELECT
-            lr.LetterRequestId,
-            lr.LetterTypeId,
-            lt.LetterTypeName,
-            lr.RequestDate,
-            lr.Status,
-            lr.LetterContentSnapshot AS LetterContent
-        FROM dbo.LetterRequests AS lr
-        INNER JOIN dbo.LetterTypes AS lt
-            ON lr.LetterTypeId = lt.LetterTypeId
-        WHERE lr.UserId = @UserId
-        ORDER BY lr.RequestDate DESC;";
+                SELECT
+                    lr.LetterRequestId,
+                    lr.LetterTypeId,
+                    lt.LetterTypeName,
+                    lr.RequestDate,
+                    lr.Status,
+                    lr.LetterContentSnapshot AS LetterContent
+                FROM dbo.LetterRequests AS lr
+                INNER JOIN dbo.LetterTypes AS lt
+                    ON lr.LetterTypeId = lt.LetterTypeId
+                WHERE lr.UserId = @UserId
+                ORDER BY lr.RequestDate DESC;";
 
             var parameters = new List<DbParametersSql.QueryParameters>
-    {
-        DbParametersSql.SetValues(
-            "@UserId",
-            SqlDbType.Int,
-            userId)
-    };
+            {
+                DbParametersSql.SetValues(
+                    "@UserId", SqlDbType.Int, userId)
+            };
 
             DataTable table = _baseSqlDL.ExecuteReader(query, parameters);
 
@@ -221,173 +198,247 @@ namespace Letter_Request_Management_System.Data.Repository
             {
                 requests.Add(new LetterRequestResponseDto
                 {
-                    LetterRequestId =
-                        Convert.ToInt32(row["LetterRequestId"]),
-
-                    LetterTypeId =
-                        Convert.ToInt32(row["LetterTypeId"]),
-
-                    LetterTypeName =
-                        row["LetterTypeName"]?.ToString() ?? string.Empty,
-
-                    RequestDate =
-                        Convert.ToDateTime(row["RequestDate"]),
-
-                    Status =
-                        row["Status"]?.ToString() ?? string.Empty,
-
-                    LetterContent =
-                        row["LetterContent"]?.ToString() ?? string.Empty
+                    LetterRequestId = Convert.ToInt32(row["LetterRequestId"]),
+                    LetterTypeId = Convert.ToInt32(row["LetterTypeId"]),
+                    LetterTypeName = row["LetterTypeName"]?.ToString() ?? string.Empty,
+                    RequestDate = Convert.ToDateTime(row["RequestDate"]),
+                    Status = row["Status"]?.ToString() ?? string.Empty,
+                    LetterContent = row["LetterContent"]?.ToString() ?? string.Empty
                 });
             }
 
             return requests;
         }
 
-
         public AdminLetterRequestDto? GetAdminRequestById(int letterRequestId)
         {
-            string query = @"
-        SELECT
-            lr.LetterRequestId,
-            u.UserId,
-            u.EmpNo,
-            u.FullName AS EmployeeName,
-            u.Email,
-            u.Department,
-            lt.LetterTypeName,
-            lr.RequestDate,
-            lr.Status,
-            lr.LetterContentSnapshot AS LetterContent
-        FROM dbo.LetterRequests lr
-        INNER JOIN dbo.Users u
-            ON lr.UserId = u.UserId
-        INNER JOIN dbo.LetterTypes lt
-            ON lr.LetterTypeId = lt.LetterTypeId
-        WHERE lr.LetterRequestId = @LetterRequestId;";
+            const string query = @"
+                SELECT
+                    lr.LetterRequestId,
+                    u.UserId,
+                    u.EmpNo,
+                    u.FullName AS EmployeeName,
+                    u.Email,
+                    u.Department,
+                    lt.LetterTypeName,
+                    lr.RequestDate,
+                    lr.Status,
+                    lr.LetterContentSnapshot AS LetterContent
+                FROM dbo.LetterRequests AS lr
+                INNER JOIN dbo.Users AS u
+                    ON lr.UserId = u.UserId
+                INNER JOIN dbo.LetterTypes AS lt
+                    ON lr.LetterTypeId = lt.LetterTypeId
+                WHERE lr.LetterRequestId = @LetterRequestId;";
 
             var parameters = new List<DbParametersSql.QueryParameters>
-    {
-        DbParametersSql.SetValues(
-            "@LetterRequestId", SqlDbType.Int, letterRequestId)
-    };
-
-            DataTable result = _baseSqlDL.ExecuteReader(query, parameters);
-
-            if (result.Rows.Count == 0)
             {
-                return null;
-            }
+                DbParametersSql.SetValues(
+                    "@LetterRequestId", SqlDbType.Int, letterRequestId)
+            };
 
-            DataRow row = result.Rows[0];
+            DataTable table = _baseSqlDL.ExecuteReader(query, parameters);
+
+            if (table.Rows.Count == 0)
+                return null;
+
+            DataRow row = table.Rows[0];
 
             return new AdminLetterRequestDto
             {
                 LetterRequestId = Convert.ToInt32(row["LetterRequestId"]),
                 UserId = Convert.ToInt32(row["UserId"]),
-                EmpNo = Convert.ToString(row["EmpNo"]) ?? string.Empty,
-                EmployeeName = Convert.ToString(row["EmployeeName"]) ?? string.Empty,
-                Email = Convert.ToString(row["Email"]) ?? string.Empty,
-                Department = Convert.ToString(row["Department"]) ?? string.Empty,
-                LetterTypeName = Convert.ToString(row["LetterTypeName"]) ?? string.Empty,
+                EmpNo = row["EmpNo"]?.ToString() ?? string.Empty,
+                EmployeeName = row["EmployeeName"]?.ToString() ?? string.Empty,
+                Email = row["Email"]?.ToString() ?? string.Empty,
+                Department = row["Department"]?.ToString() ?? string.Empty,
+                LetterTypeName = row["LetterTypeName"]?.ToString() ?? string.Empty,
                 RequestDate = Convert.ToDateTime(row["RequestDate"]),
-                Status = Convert.ToString(row["Status"]) ?? string.Empty,
-                LetterContent = Convert.ToString(row["LetterContent"]) ?? string.Empty
+                Status = row["Status"]?.ToString() ?? string.Empty,
+                LetterContent = row["LetterContent"]?.ToString() ?? string.Empty
             };
         }
 
+        // Approve request and save the PDF reference.
+        // This retains the existing BaseSqlDL ExecuteReader pattern.
         public int ApproveRequest(
             int letterRequestId,
             int approvedByUserId,
-            string signatureReference)
+            string signatureReference,
+            string pdfReference)
         {
-            string query = @"
-        SET NOCOUNT ON;
-        SET XACT_ABORT ON;
+            const string query = @"
+                SET XACT_ABORT ON;
+                BEGIN TRANSACTION;
 
-        DECLARE @ResultCode INT = 0;
-        DECLARE @CurrentStatus NVARCHAR(20);
+                IF NOT EXISTS (
+                    SELECT 1
+                    FROM dbo.LetterRequests WITH (UPDLOCK, HOLDLOCK)
+                    WHERE LetterRequestId = @LetterRequestId
+                      AND Status = 'Pending'
+                )
+                BEGIN
+                    ROLLBACK TRANSACTION;
+                    SELECT 0 AS Result;
+                    RETURN;
+                END;
 
-        BEGIN TRY
-            BEGIN TRANSACTION;
-
-            SELECT @CurrentStatus = Status
-            FROM dbo.LetterRequests WITH (UPDLOCK, HOLDLOCK)
-            WHERE LetterRequestId = @LetterRequestId;
-
-            IF @CurrentStatus IS NULL
-            BEGIN
-                SET @ResultCode = 0;
-            END
-            ELSE IF @CurrentStatus <> 'Pending'
-            BEGIN
-                SET @ResultCode = 2;
-            END
-            ELSE
-            BEGIN
                 UPDATE dbo.LetterRequests
                 SET Status = 'Approved'
                 WHERE LetterRequestId = @LetterRequestId
                   AND Status = 'Pending';
 
-                IF @@ROWCOUNT = 1
-                BEGIN
-                    INSERT INTO dbo.LetterApprovals
-                    (
-                        LetterRequestId,
-                        ApprovedByUserId,
-                        SignatureReference
-                    )
-                    VALUES
-                    (
-                        @LetterRequestId,
-                        @ApprovedByUserId,
-                        @SignatureReference
-                    );
+                INSERT INTO dbo.LetterApprovals
+                (
+                    LetterRequestId,
+                    ApprovedByUserId,
+                    ApprovedAt,
+                    SignatureReference,
+                    PdfReference
+                )
+                VALUES
+                (
+                    @LetterRequestId,
+                    @ApprovedByUserId,
+                    SYSDATETIME(),
+                    @SignatureReference,
+                    @PdfReference
+                );
 
-                    SET @ResultCode = 1;
-                END
-                ELSE
-                BEGIN
-                    SET @ResultCode = 2;
-                END
-            END;
-
-            COMMIT TRANSACTION;
-
-            SELECT @ResultCode AS ResultCode;
-        END TRY
-        BEGIN CATCH
-            IF @@TRANCOUNT > 0
-                ROLLBACK TRANSACTION;
-
-            THROW;
-        END CATCH;";
+                COMMIT TRANSACTION;
+                SELECT 1 AS Result;";
 
             var parameters = new List<DbParametersSql.QueryParameters>
-    {
-        DbParametersSql.SetValues(
-            "@LetterRequestId", SqlDbType.Int, letterRequestId),
-
-        DbParametersSql.SetValues(
-            "@ApprovedByUserId", SqlDbType.Int, approvedByUserId),
-
-        DbParametersSql.SetValues(
-            "@SignatureReference",
-            SqlDbType.NVarChar,
-            signatureReference.Trim())
-    };
-
-            DataTable result = _baseSqlDL.ExecuteReader(query, parameters);
-
-            if (result.Rows.Count == 0)
             {
-                return 0;
-            }
+                DbParametersSql.SetValues(
+                    "@LetterRequestId", SqlDbType.Int, letterRequestId),
 
-            return Convert.ToInt32(result.Rows[0]["ResultCode"]);
+                DbParametersSql.SetValues(
+                    "@ApprovedByUserId", SqlDbType.Int, approvedByUserId),
+
+                DbParametersSql.SetValues(
+                    "@SignatureReference", SqlDbType.NVarChar, signatureReference),
+
+                DbParametersSql.SetValues(
+                    "@PdfReference", SqlDbType.NVarChar, pdfReference)
+            };
+
+            DataTable table = _baseSqlDL.ExecuteReader(query, parameters);
+
+            if (table.Rows.Count == 0)
+                return 0;
+
+            return Convert.ToInt32(table.Rows[0]["Result"]);
         }
 
+        // Kept for compatibility with existing code.
+        public string? GetApprovedPdfReference(
+            int letterRequestId,
+            int userId)
+        {
+            const string query = @"
+                SELECT LA.PdfReference
+                FROM dbo.LetterRequests AS LR
+                INNER JOIN dbo.LetterApprovals AS LA
+                    ON LR.LetterRequestId = LA.LetterRequestId
+                WHERE LR.LetterRequestId = @LetterRequestId
+                  AND LR.UserId = @UserId
+                  AND LR.Status = 'Approved'
+                  AND LA.PdfReference IS NOT NULL;";
 
+            var parameters = new List<DbParametersSql.QueryParameters>
+            {
+                DbParametersSql.SetValues(
+                    "@LetterRequestId", SqlDbType.Int, letterRequestId),
+
+                DbParametersSql.SetValues(
+                    "@UserId", SqlDbType.Int, userId)
+            };
+
+            DataTable table = _baseSqlDL.ExecuteReader(query, parameters);
+
+            if (table.Rows.Count == 0)
+                return null;
+
+            return table.Rows[0]["PdfReference"]?.ToString();
+        }
+
+        public string? GetUserFullName(int userId)
+        {
+            const string query = @"
+                SELECT FullName
+                FROM dbo.Users
+                WHERE UserId = @UserId;";
+
+            var parameters = new List<DbParametersSql.QueryParameters>
+            {
+                DbParametersSql.SetValues(
+                    "@UserId", SqlDbType.Int, userId)
+            };
+
+            DataTable table = _baseSqlDL.ExecuteReader(query, parameters);
+
+            if (table.Rows.Count == 0)
+                return null;
+
+            return table.Rows[0]["FullName"]?.ToString();
+        }
+
+        // Retrieve the approved letter and the signature of the actual approver.
+        // This does not depend on PdfReference.
+        public (
+            string LetterContent,
+            string SignatureReference,
+            string ApproverName,
+            DateTime ApprovedAt
+        )? GetApprovedLetterForDownload(int letterRequestId, int userId)
+        {
+            const string query = @"
+                SELECT
+                    LR.LetterContentSnapshot AS LetterContent,
+                    LA.SignatureReference,
+                    AdminUser.FullName AS ApproverName,
+                    LA.ApprovedAt
+                FROM dbo.LetterRequests AS LR
+                INNER JOIN dbo.LetterApprovals AS LA
+                    ON LR.LetterRequestId = LA.LetterRequestId
+                INNER JOIN dbo.Users AS AdminUser
+                    ON LA.ApprovedByUserId = AdminUser.UserId
+                WHERE LR.LetterRequestId = @LetterRequestId
+                  AND LR.UserId = @UserId
+                  AND LR.Status = 'Approved'
+                  AND LA.SignatureReference IS NOT NULL;";
+
+            var parameters = new List<DbParametersSql.QueryParameters>
+            {
+                DbParametersSql.SetValues(
+                    "@LetterRequestId", SqlDbType.Int, letterRequestId),
+
+                DbParametersSql.SetValues(
+                    "@UserId", SqlDbType.Int, userId)
+            };
+
+            DataTable table = _baseSqlDL.ExecuteReader(query, parameters);
+
+            if (table.Rows.Count == 0)
+                return null;
+
+            DataRow row = table.Rows[0];
+
+            if (row["LetterContent"] == DBNull.Value ||
+                row["SignatureReference"] == DBNull.Value ||
+                row["ApproverName"] == DBNull.Value ||
+                row["ApprovedAt"] == DBNull.Value)
+            {
+                return null;
+            }
+
+            return (
+                row["LetterContent"].ToString() ?? string.Empty,
+                row["SignatureReference"].ToString() ?? string.Empty,
+                row["ApproverName"].ToString() ?? string.Empty,
+                Convert.ToDateTime(row["ApprovedAt"])
+            );
+        }
     }
 }
