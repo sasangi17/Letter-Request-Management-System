@@ -34,8 +34,7 @@ namespace Letter_Request_Management_System.Controllers
         }
 
         [HttpPost("createrequest")]
-        public IActionResult CreateRequest(
-            [FromBody] LetterRequestDto dto)
+        public IActionResult CreateRequest([FromBody] LetterRequestDto dto)
         {
             int userId = GetLoggedInUserId();
 
@@ -45,7 +44,7 @@ namespace Letter_Request_Management_System.Controllers
             if (dto == null || dto.LetterTypeId <= 0)
                 return BadRequest("A valid letter type is required.");
 
-            int requestId = _business.CreateRequest(userId,dto.LetterTypeId);
+            int requestId = _business.CreateRequest(userId, dto.LetterTypeId);
 
             if (requestId == 0)
             {
@@ -53,18 +52,12 @@ namespace Letter_Request_Management_System.Controllers
                     "Could not create the request. Check that the selected letter type exists.");
             }
 
-            var request = _business.GetRequestById(requestId,userId);
-
-            if (request == null)
+            return Ok(new
             {
-                return StatusCode(500,
-                    "The request was created but could not be retrieved.");
-            }
-
-            return CreatedAtAction(
-                nameof(GetRequestById),
-                new { id = requestId },
-                request);
+                message = "Letter request created successfully.",
+                letterRequestId = requestId,
+                status = "Pending"
+            });
         }
 
         [HttpGet("myrequest")]
@@ -77,22 +70,8 @@ namespace Letter_Request_Management_System.Controllers
 
             return Ok(_business.GetMyRequests(userId));
         }
-
-        [HttpGet("requestbyid")]
-        public IActionResult GetRequestById(int id)
-        {
-            int userId = GetLoggedInUserId();
-
-            if (userId <= 0)
-                return Unauthorized();
-
-            var request = _business.GetRequestById(id, userId);
-
-            if (request == null)
-                return NotFound("The letter request was not found.");
-
-            return Ok(request);
-        }
+        
+        
 
         [HttpGet("letterdownload")]
         public IActionResult DownloadLetter(int id)
