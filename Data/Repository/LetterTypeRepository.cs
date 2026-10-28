@@ -24,11 +24,9 @@ namespace Letter_Request_Management_System.Data.Repository
                 FROM dbo.LetterTypes
                 ORDER BY LetterTypeName;";
 
-            var parameters =
-                new List<DbParametersSql.QueryParameters>();
+            var parameters = new List<DbParametersSql.QueryParameters>();
 
-            DataTable dataTable =
-                _baseSqlDL.ExecuteReader(query, parameters);
+            DataTable dataTable = _baseSqlDL.ExecuteReader(query, parameters);
 
             var letterTypes = new List<LetterTypeMl>();
 
@@ -37,13 +35,9 @@ namespace Letter_Request_Management_System.Data.Repository
                 letterTypes.Add(new LetterTypeMl
                 {
                     LetterTypeId = Convert.ToInt32(row["LetterTypeId"]),
-                    LetterTypeName = Convert.ToString(
-                        row["LetterTypeName"]) ?? string.Empty,
-                    Description = row["Description"] == DBNull.Value
-                        ? null
-                        : Convert.ToString(row["Description"]),
-                    TemplateContent = Convert.ToString(
-                        row["TemplateContent"]) ?? string.Empty
+                    LetterTypeName = Convert.ToString(row["LetterTypeName"]) ?? string.Empty,
+                    Description = row["Description"] == DBNull.Value? null: Convert.ToString(row["Description"]),
+                    TemplateContent = Convert.ToString(row["TemplateContent"]) ?? string.Empty
                 });
             }
 

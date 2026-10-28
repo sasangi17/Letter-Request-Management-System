@@ -37,15 +37,8 @@ namespace Letter_Request_Management_System.Data.Repository
             var parameters =
                 new List<DbParametersSql.QueryParameters>
                 {
-                    DbParametersSql.SetValues(
-                        "@Email",
-                        SqlDbType.NVarChar,
-                        email.Trim()),
-
-                    DbParametersSql.SetValues(
-                        "@Password",
-                        SqlDbType.NVarChar,
-                        password)
+                    DbParametersSql.SetValues("@Email",SqlDbType.NVarChar,email.Trim()),
+                    DbParametersSql.SetValues("@Password",SqlDbType.NVarChar,password)
                 };
 
             DataTable table = _baseSqlDL.ExecuteReader(query, parameters);
@@ -64,44 +57,20 @@ namespace Letter_Request_Management_System.Data.Repository
                     user = new UserMl
                     {
                         UserId = Convert.ToInt32(row["UserId"]),
-
-                        EmpNo = row["EmpNo"]?.ToString()
-                            ?? string.Empty,
-
-                        Email = row["Email"]?.ToString()
-                            ?? string.Empty,
-
-                        Password = row["Password"]?.ToString()
-                            ?? string.Empty,
-
-                        FullName = row["FullName"]?.ToString()
-                            ?? string.Empty,
-
-                        Department = row.IsNull("Department")
-                            ? null
-                            : row["Department"].ToString(),
-
-                        Position = row.IsNull("Position")
-                            ? null
-                            : row["Position"].ToString(),
-
-                        JoinDate = row.IsNull("JoinDate")
-                            ? null
-                            : Convert.ToDateTime(row["JoinDate"]),
-
-                        MobileNo = row.IsNull("MobileNo")
-                            ? null
-                            : row["MobileNo"].ToString()
+                        EmpNo = row["EmpNo"]?.ToString()?? string.Empty,
+                        Email = row["Email"]?.ToString()?? string.Empty,
+                        Password = row["Password"]?.ToString()?? string.Empty,
+                        FullName = row["FullName"]?.ToString()?? string.Empty,
+                        Department = row.IsNull("Department")? null: row["Department"].ToString(),
+                        Position = row.IsNull("Position")? null: row["Position"].ToString(),
+                        JoinDate = row.IsNull("JoinDate")? null: Convert.ToDateTime(row["JoinDate"]),
+                        MobileNo = row.IsNull("MobileNo")? null: row["MobileNo"].ToString()
                     };
                 }
 
-                string role = row["Role"]?.ToString()
-                    ?? string.Empty;
+                string role = row["Role"]?.ToString()?? string.Empty;
 
-                if (!string.IsNullOrWhiteSpace(role) &&
-                    !user.Roles.Contains(
-                        role,
-                        StringComparer.OrdinalIgnoreCase))
+                if (!string.IsNullOrWhiteSpace(role) &&!user.Roles.Contains(role,StringComparer.OrdinalIgnoreCase))
                 {
                     user.Roles.Add(role);
                 }

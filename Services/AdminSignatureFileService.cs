@@ -100,7 +100,6 @@ namespace Letter_Request_Management_System.Services
 
             // Normalize Windows and URL-style paths.
             string normalizedReference = signatureReference.Replace('\\', '/');
-
             string fileName = Path.GetFileName(normalizedReference);
 
             if (string.IsNullOrWhiteSpace(fileName))
@@ -109,15 +108,10 @@ namespace Letter_Request_Management_System.Services
             }
 
             // First check the folder used by this service.
-            string fullPath = Path.GetFullPath(
-                Path.Combine(_signatureFolder, fileName));
+            string fullPath = Path.GetFullPath(Path.Combine(_signatureFolder, fileName));
+            string folderPath = Path.GetFullPath(_signatureFolder)+ Path.DirectorySeparatorChar;
 
-            string folderPath = Path.GetFullPath(_signatureFolder)
-                + Path.DirectorySeparatorChar;
-
-            if (!fullPath.StartsWith(
-                folderPath,
-                StringComparison.OrdinalIgnoreCase))
+            if (!fullPath.StartsWith(folderPath,StringComparison.OrdinalIgnoreCase))
             {
                 return null;
             }
@@ -127,17 +121,10 @@ namespace Letter_Request_Management_System.Services
                 return fullPath;
             }
 
-            // Also check the legacy "signatures" folder, if it exists.
-            string legacyFolder = Path.GetFullPath(
-                Path.Combine(
-                    Directory.GetCurrentDirectory(),
-                    "signatures"));
-
-            string legacyPath = Path.GetFullPath(
-                Path.Combine(legacyFolder, fileName));
-
-            string legacyFolderPrefix = legacyFolder
-                + Path.DirectorySeparatorChar;
+            // Check the legacy "signatures" folder.
+            string legacyFolder = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(),"signatures"));
+            string legacyPath = Path.GetFullPath(Path.Combine(legacyFolder, fileName));
+            string legacyFolderPrefix = legacyFolder + Path.DirectorySeparatorChar;
 
             if (legacyPath.StartsWith(
                     legacyFolderPrefix,

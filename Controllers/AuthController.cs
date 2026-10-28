@@ -54,10 +54,8 @@ namespace Letter_Request_Management_System.Controllers
 
             if (roles.Count == 0 ||
                 roles.Any(role =>
-                    !role.Equals("Admin",
-                        StringComparison.OrdinalIgnoreCase) &&
-                    !role.Equals("Employee",
-                        StringComparison.OrdinalIgnoreCase)))
+                    !role.Equals("Admin",StringComparison.OrdinalIgnoreCase) &&
+                    !role.Equals("Employee",StringComparison.OrdinalIgnoreCase)))
             {
                 return StatusCode(500, new
                 {
@@ -87,9 +85,7 @@ namespace Letter_Request_Management_System.Controllers
 
                 // If a role was supplied, it must match the user's role.
                 if (!string.IsNullOrWhiteSpace(loginDto.SelectedRole) &&
-                    !selectedRole.Equals(
-                        loginDto.SelectedRole.Trim(),
-                        StringComparison.OrdinalIgnoreCase))
+                    !selectedRole.Equals(loginDto.SelectedRole.Trim(),StringComparison.OrdinalIgnoreCase))
                 {
                     return BadRequest(new
                     {

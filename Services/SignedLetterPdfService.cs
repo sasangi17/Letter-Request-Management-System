@@ -1,5 +1,4 @@
-﻿
-using QuestPDF.Fluent;
+﻿using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 
@@ -71,19 +70,15 @@ namespace Letter_Request_Management_System.Services
             string signatureImagePath)
         {
             if (string.IsNullOrWhiteSpace(letterContent))
-                throw new ArgumentException(
-                    "Letter content is required.");
+                throw new ArgumentException("Letter content is required.");
 
             if (string.IsNullOrWhiteSpace(approverName))
-                throw new ArgumentException(
-                    "Approver name is required.");
+                throw new ArgumentException("Approver name is required.");
 
             if (string.IsNullOrWhiteSpace(signatureImagePath) ||
                 !File.Exists(signatureImagePath))
             {
-                throw new FileNotFoundException(
-                    "Signature image was not found.",
-                    signatureImagePath);
+                throw new FileNotFoundException("Signature image was not found.",signatureImagePath);
             }
         }
 
@@ -105,41 +100,16 @@ namespace Letter_Request_Management_System.Services
                     {
                         column.Spacing(18);
 
-                        column.Item()
-                            .Text("EMPLOYEE LETTER")
-                            .FontSize(20)
-                            .Bold();
-
+                        column.Item().Text("EMPLOYEE LETTER").FontSize(20).Bold();
                         column.Item().Text(letterContent);
-
-                        column.Item()
-                            .PaddingTop(20)
-                            .Text("Approved by:");
-
-                        column.Item()
-                            .Text(approverName)
-                            .Bold();
-
-                        column.Item()
-                            .Text("Authorized signature:");
-
-                        column.Item()
-                            .Width(180)
-                            .Height(80)
-                            .Image(signatureImagePath)
-                            .FitArea();
-
-                        column.Item()
-                            .Text(
-                                $"Approval date: {approvedAt:dd MMMM yyyy HH:mm}")
-                            .FontSize(10);
+                        column.Item().PaddingTop(20).Text("Approved by:");
+                        column.Item().Text(approverName).Bold();
+                        column.Item().Text("Authorized signature:");
+                        column.Item().Width(180).Height(80).Image(signatureImagePath).FitArea();
+                        column.Item().Text($"Approval date: {approvedAt:dd MMMM yyyy HH:mm}").FontSize(10);
                     });
 
-                    page.Footer()
-                        .AlignCenter()
-                        .Text(
-                            "Employee Letter Request Management System")
-                        .FontSize(9);
+                    page.Footer().AlignCenter().Text("Employee Letter Request Management System").FontSize(9);
                 });
             });
         }

@@ -11,8 +11,7 @@ namespace Letter_Request_Management_System.Controllers
     {
         private readonly LetterTypeBusiness _letterTypeBusiness;
 
-        public LetterTypeController(
-            LetterTypeBusiness letterTypeBusiness)
+        public LetterTypeController(LetterTypeBusiness letterTypeBusiness)
         {
             _letterTypeBusiness = letterTypeBusiness;
         }
@@ -20,8 +19,7 @@ namespace Letter_Request_Management_System.Controllers
         [HttpGet]
         public IActionResult GetAllLetterTypes()
         {
-            var letterTypes =
-                _letterTypeBusiness.GetAllLetterTypes();
+            var letterTypes = _letterTypeBusiness.GetAllLetterTypes();
 
             return Ok(letterTypes);
         }

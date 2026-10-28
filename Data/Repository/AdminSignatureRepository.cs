@@ -13,9 +13,7 @@ namespace Letter_Request_Management_System.Data.Repository
         }
 
         // Save a new signature reference or update the existing one.
-        public bool SaveOrUpdateSignatureReference(
-            int userId,
-            string signatureReference)
+        public bool SaveOrUpdateSignatureReference(int userId,string signatureReference)
         {
             const string query = @"
                 UPDATE dbo.AdminSignatures
@@ -45,19 +43,11 @@ namespace Letter_Request_Management_System.Data.Repository
             var parameters =
                 new List<DbParametersSql.QueryParameters>
                 {
-                    DbParametersSql.SetValues(
-                        "@UserId",
-                        SqlDbType.Int,
-                        userId),
-
-                    DbParametersSql.SetValues(
-                        "@SignatureReference",
-                        SqlDbType.NVarChar,
-                        signatureReference)
+                    DbParametersSql.SetValues("@UserId",SqlDbType.Int,userId),
+                    DbParametersSql.SetValues("@SignatureReference",SqlDbType.NVarChar,signatureReference)
                 };
 
-            DataTable table =
-                _baseSqlDL.ExecuteReader(query, parameters);
+            DataTable table = _baseSqlDL.ExecuteReader(query, parameters);
 
             return table.Rows.Count > 0;
         }
@@ -73,22 +63,17 @@ namespace Letter_Request_Management_System.Data.Repository
             var parameters =
                 new List<DbParametersSql.QueryParameters>
                 {
-                    DbParametersSql.SetValues(
-                        "@UserId",
-                        SqlDbType.Int,
-                        userId)
+                    DbParametersSql.SetValues("@UserId",SqlDbType.Int,userId)
                 };
 
-            DataTable table =
-                _baseSqlDL.ExecuteReader(query, parameters);
+            DataTable table = _baseSqlDL.ExecuteReader(query, parameters);
 
             if (table.Rows.Count == 0)
             {
                 return null;
             }
 
-            return table.Rows[0]["SignatureReference"]
-                ?.ToString();
+            return table.Rows[0]["SignatureReference"]?.ToString();
         }
     }
 }

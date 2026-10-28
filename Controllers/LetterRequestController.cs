@@ -1,5 +1,4 @@
-﻿
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using Letter_Request_Management_System.Business;
 using Letter_Request_Management_System.Models.Dto;
 using Letter_Request_Management_System.Services;
@@ -29,8 +28,7 @@ namespace Letter_Request_Management_System.Controllers
 
         private int GetLoggedInUserId()
         {
-            string? userId = User.FindFirstValue(
-                ClaimTypes.NameIdentifier);
+            string? userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             return int.TryParse(userId, out int id) ? id : 0;
         }
@@ -47,9 +45,7 @@ namespace Letter_Request_Management_System.Controllers
             if (dto == null || dto.LetterTypeId <= 0)
                 return BadRequest("A valid letter type is required.");
 
-            int requestId = _business.CreateRequest(
-                userId,
-                dto.LetterTypeId);
+            int requestId = _business.CreateRequest(userId,dto.LetterTypeId);
 
             if (requestId == 0)
             {
@@ -57,14 +53,11 @@ namespace Letter_Request_Management_System.Controllers
                     "Could not create the request. Check that the selected letter type exists.");
             }
 
-            var request = _business.GetRequestById(
-                requestId,
-                userId);
+            var request = _business.GetRequestById(requestId,userId);
 
             if (request == null)
             {
-                return StatusCode(
-                    500,
+                return StatusCode(500,
                     "The request was created but could not be retrieved.");
             }
 
@@ -101,7 +94,7 @@ namespace Letter_Request_Management_System.Controllers
             return Ok(request);
         }
 
-        [HttpGet("{id}/download")]
+        [HttpGet("letterdownload")]
         public IActionResult DownloadLetter(int id)
         {
             int userId = GetLoggedInUserId();
@@ -123,12 +116,9 @@ namespace Letter_Request_Management_System.Controllers
 
             var letter = approvedLetter.Value;
 
-            string? signatureImagePath =
-                _signatureFileService.GetSignatureFullPath(
-                    letter.SignatureReference);
+            string? signatureImagePath =_signatureFileService.GetSignatureFullPath(letter.SignatureReference);
 
-            if (string.IsNullOrWhiteSpace(signatureImagePath) ||
-                !System.IO.File.Exists(signatureImagePath))
+            if (string.IsNullOrWhiteSpace(signatureImagePath) || !System.IO.File.Exists(signatureImagePath))
             {
                 return NotFound(
                     "The administrator's signature image could not be found. Please ask the administrator to upload the signature again.");

@@ -34,32 +34,7 @@ namespace Letter_Request_Management_System.Controllers
             return Ok(requests);
         }
 
-        /*
-        // GET: /api/Admin/requests/3
-        [HttpGet("requests/{id:int}")]
-        public IActionResult GetRequestById(int id)
-        {
-            if (id <= 0)
-            {
-                return BadRequest(new
-                {
-                    message = "A valid letter request ID is required."
-                });
-            }
-
-            var request = _adminBusiness.GetRequestById(id);
-
-            if (request == null)
-            {
-                return NotFound(new
-                {
-                    message = "Letter request not found."
-                });
-            }
-
-            return Ok(request);
-        }*/
-
+       
         // PUT: /api/Admin/requestsapprove?id=3
 
         [HttpPut("requestsapprove")]
@@ -73,8 +48,7 @@ namespace Letter_Request_Management_System.Controllers
                 });
             }
 
-            string? userIdClaim =
-                User.FindFirstValue(ClaimTypes.NameIdentifier);
+            string? userIdClaim =User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (!int.TryParse(userIdClaim, out int adminUserId))
             {
@@ -86,9 +60,7 @@ namespace Letter_Request_Management_System.Controllers
 
             try
             {
-                int result = _adminBusiness.ApproveRequest(
-                    id,
-                    adminUserId);
+                int result = _adminBusiness.ApproveRequest(id,adminUserId);
 
                 if (result == 0)
                 {
@@ -165,8 +137,7 @@ namespace Letter_Request_Management_System.Controllers
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> UploadSignature(IFormFile signature)
         {
-            string? userIdClaim =
-                User.FindFirstValue(ClaimTypes.NameIdentifier);
+            string? userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (!int.TryParse(userIdClaim, out int adminUserId))
             {
@@ -187,14 +158,10 @@ namespace Letter_Request_Management_System.Controllers
             try
             {
                 // Save the image in the protected folder.
-                string signatureReference =
-                    await _signatureFileService.SaveSignatureAsync(signature);
+                string signatureReference = await _signatureFileService.SaveSignatureAsync(signature);
 
-                // Save its reference in SQL Server.
-                bool saved =
-                    _adminSignatureBusiness.SaveSignatureReference(
-                        adminUserId,
-                        signatureReference);
+                // Save sign reference in SQL Server.
+                bool saved =_adminSignatureBusiness.SaveSignatureReference(adminUserId,signatureReference);
 
                 if (!saved)
                 {

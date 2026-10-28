@@ -6,15 +6,12 @@ namespace Letter_Request_Management_System.Business
     {
         private readonly AdminSignatureRepository _repository;
 
-        public AdminSignatureBusiness(
-            AdminSignatureRepository repository)
+        public AdminSignatureBusiness(AdminSignatureRepository repository)
         {
             _repository = repository;
         }
 
-        public bool SaveSignatureReference(
-            int userId,
-            string signatureReference)
+        public bool SaveSignatureReference(int userId,string signatureReference)
         {
             if (userId <= 0)
             {
@@ -26,9 +23,7 @@ namespace Letter_Request_Management_System.Business
                 return false;
             }
 
-            return _repository.SaveOrUpdateSignatureReference(
-                userId,
-                signatureReference);
+            return _repository.SaveOrUpdateSignatureReference(userId,signatureReference);
         }
 
         public string? GetSignatureReference(int userId)

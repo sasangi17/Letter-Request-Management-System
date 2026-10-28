@@ -7,8 +7,7 @@ namespace Letter_Request_Management_System.Business
     {
         private readonly LetterTypeRepository _letterTypeRepository;
 
-        public LetterTypeBusiness(
-            LetterTypeRepository letterTypeRepository)
+        public LetterTypeBusiness(LetterTypeRepository letterTypeRepository)
         {
             _letterTypeRepository = letterTypeRepository;
         }

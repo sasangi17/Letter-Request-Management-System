@@ -1,5 +1,4 @@
-﻿
-using Letter_Request_Management_System.Data.Repository;
+﻿using Letter_Request_Management_System.Data.Repository;
 using Letter_Request_Management_System.Models.Dto;
 
 namespace Letter_Request_Management_System.Business
@@ -8,8 +7,7 @@ namespace Letter_Request_Management_System.Business
     {
         private readonly LetterRequestRepository _letterRequestRepository;
 
-        public LetterRequestBusiness(
-            LetterRequestRepository letterRequestRepository)
+        public LetterRequestBusiness(LetterRequestRepository letterRequestRepository)
         {
             _letterRequestRepository = letterRequestRepository;
         }
@@ -19,21 +17,15 @@ namespace Letter_Request_Management_System.Business
             if (userId <= 0 || letterTypeId <= 0)
                 return 0;
 
-            return _letterRequestRepository.CreateRequest(
-                userId,
-                letterTypeId);
+            return _letterRequestRepository.CreateRequest(userId,letterTypeId);
         }
 
-        public LetterRequestResponseDto? GetRequestById(
-            int letterRequestId,
-            int userId)
+        public LetterRequestResponseDto? GetRequestById(int letterRequestId,int userId)
         {
             if (letterRequestId <= 0 || userId <= 0)
                 return null;
 
-            return _letterRequestRepository.GetRequestById(
-                letterRequestId,
-                userId);
+            return _letterRequestRepository.GetRequestById(letterRequestId,userId);
         }
 
         public List<LetterRequestResponseDto> GetMyRequests(int userId)
@@ -44,16 +36,12 @@ namespace Letter_Request_Management_System.Business
             return _letterRequestRepository.GetMyRequests(userId);
         }
 
-        public string? GetApprovedPdfReference(
-            int letterRequestId,
-            int userId)
+        public string? GetApprovedPdfReference(int letterRequestId,int userId)
         {
             if (letterRequestId <= 0 || userId <= 0)
                 return null;
 
-            return _letterRequestRepository.GetApprovedPdfReference(
-                letterRequestId,
-                userId);
+            return _letterRequestRepository.GetApprovedPdfReference(letterRequestId,userId);
         }
 
         public (
@@ -66,9 +54,7 @@ namespace Letter_Request_Management_System.Business
             if (letterRequestId <= 0 || userId <= 0)
                 return null;
 
-            return _letterRequestRepository.GetApprovedLetterForDownload(
-                letterRequestId,
-                userId);
+            return _letterRequestRepository.GetApprovedLetterForDownload(letterRequestId,userId);
         }
     }
 }

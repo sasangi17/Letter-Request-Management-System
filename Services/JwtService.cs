@@ -46,35 +46,19 @@ namespace Letter_Request_Management_System.Services
 
             if (!hasRole)
             {
-                throw new InvalidOperationException(
-                    "The selected role is not assigned to this user.");
+                throw new InvalidOperationException("The selected role is not assigned to this user.");
             }
 
             var claims = new List<Claim>
             {
-                new Claim(
-                    ClaimTypes.NameIdentifier,
-                    user.UserId.ToString()),
-
-                new Claim(
-                    ClaimTypes.Email,
-                    user.Email),
-
-                new Claim(
-                    ClaimTypes.Name,
-                    user.FullName),
-
-                new Claim(
-                    ClaimTypes.Role,
-                    selectedRole)
+                new Claim(ClaimTypes.NameIdentifier,user.UserId.ToString()),
+                new Claim(ClaimTypes.Email,user.Email),
+                new Claim(ClaimTypes.Name,user.FullName),
+                new Claim(ClaimTypes.Role,selectedRole)
             };
 
-            var key = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(secret));
-
-            var credentials = new SigningCredentials(
-                key,
-                SecurityAlgorithms.HmacSha256);
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
+            var credentials = new SigningCredentials(key,SecurityAlgorithms.HmacSha256);
 
             var token = new JwtSecurityToken(
                 issuer: issuer,
@@ -83,8 +67,7 @@ namespace Letter_Request_Management_System.Services
                 expires: GetExpiration(),
                 signingCredentials: credentials);
 
-            return new JwtSecurityTokenHandler()
-                .WriteToken(token);
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
     }
 }

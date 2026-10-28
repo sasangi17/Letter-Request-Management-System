@@ -1,5 +1,4 @@
-﻿
-using System.Data;
+﻿using System.Data;
 using Letter_Request_Management_System.Data.Repository.BaseSQLDbConnection;
 using Letter_Request_Management_System.Models.Dto;
 
@@ -108,11 +107,8 @@ namespace Letter_Request_Management_System.Data.Repository
 
             var parameters = new List<DbParametersSql.QueryParameters>
             {
-                DbParametersSql.SetValues(
-                    "@UserId", SqlDbType.Int, userId),
-
-                DbParametersSql.SetValues(
-                    "@LetterTypeId", SqlDbType.Int, letterTypeId)
+                DbParametersSql.SetValues("@UserId", SqlDbType.Int, userId),
+                DbParametersSql.SetValues("@LetterTypeId", SqlDbType.Int, letterTypeId)
             };
 
             DataTable table = _baseSqlDL.ExecuteReader(query, parameters);
@@ -143,11 +139,8 @@ namespace Letter_Request_Management_System.Data.Repository
 
             var parameters = new List<DbParametersSql.QueryParameters>
             {
-                DbParametersSql.SetValues(
-                    "@LetterRequestId", SqlDbType.Int, letterRequestId),
-
-                DbParametersSql.SetValues(
-                    "@UserId", SqlDbType.Int, userId)
+                DbParametersSql.SetValues("@LetterRequestId", SqlDbType.Int, letterRequestId),
+                DbParametersSql.SetValues("@UserId", SqlDbType.Int, userId)
             };
 
             DataTable table = _baseSqlDL.ExecuteReader(query, parameters);
@@ -186,8 +179,7 @@ namespace Letter_Request_Management_System.Data.Repository
 
             var parameters = new List<DbParametersSql.QueryParameters>
             {
-                DbParametersSql.SetValues(
-                    "@UserId", SqlDbType.Int, userId)
+                DbParametersSql.SetValues("@UserId", SqlDbType.Int, userId)
             };
 
             DataTable table = _baseSqlDL.ExecuteReader(query, parameters);
@@ -233,8 +225,7 @@ namespace Letter_Request_Management_System.Data.Repository
 
             var parameters = new List<DbParametersSql.QueryParameters>
             {
-                DbParametersSql.SetValues(
-                    "@LetterRequestId", SqlDbType.Int, letterRequestId)
+                DbParametersSql.SetValues("@LetterRequestId", SqlDbType.Int, letterRequestId)
             };
 
             DataTable table = _baseSqlDL.ExecuteReader(query, parameters);
@@ -259,8 +250,6 @@ namespace Letter_Request_Management_System.Data.Repository
             };
         }
 
-        // Approve request and save the PDF reference.
-        // This retains the existing BaseSqlDL ExecuteReader pattern.
         public int ApproveRequest(
             int letterRequestId,
             int approvedByUserId,
@@ -310,17 +299,10 @@ namespace Letter_Request_Management_System.Data.Repository
 
             var parameters = new List<DbParametersSql.QueryParameters>
             {
-                DbParametersSql.SetValues(
-                    "@LetterRequestId", SqlDbType.Int, letterRequestId),
-
-                DbParametersSql.SetValues(
-                    "@ApprovedByUserId", SqlDbType.Int, approvedByUserId),
-
-                DbParametersSql.SetValues(
-                    "@SignatureReference", SqlDbType.NVarChar, signatureReference),
-
-                DbParametersSql.SetValues(
-                    "@PdfReference", SqlDbType.NVarChar, pdfReference)
+                DbParametersSql.SetValues("@LetterRequestId", SqlDbType.Int, letterRequestId),
+                DbParametersSql.SetValues("@ApprovedByUserId", SqlDbType.Int, approvedByUserId),
+                DbParametersSql.SetValues("@SignatureReference", SqlDbType.NVarChar, signatureReference),
+                DbParametersSql.SetValues("@PdfReference", SqlDbType.NVarChar, pdfReference)
             };
 
             DataTable table = _baseSqlDL.ExecuteReader(query, parameters);
@@ -331,7 +313,6 @@ namespace Letter_Request_Management_System.Data.Repository
             return Convert.ToInt32(table.Rows[0]["Result"]);
         }
 
-        // Kept for compatibility with existing code.
         public string? GetApprovedPdfReference(
             int letterRequestId,
             int userId)
@@ -348,11 +329,8 @@ namespace Letter_Request_Management_System.Data.Repository
 
             var parameters = new List<DbParametersSql.QueryParameters>
             {
-                DbParametersSql.SetValues(
-                    "@LetterRequestId", SqlDbType.Int, letterRequestId),
-
-                DbParametersSql.SetValues(
-                    "@UserId", SqlDbType.Int, userId)
+                DbParametersSql.SetValues("@LetterRequestId", SqlDbType.Int, letterRequestId),
+                DbParametersSql.SetValues("@UserId", SqlDbType.Int, userId)
             };
 
             DataTable table = _baseSqlDL.ExecuteReader(query, parameters);
@@ -372,8 +350,7 @@ namespace Letter_Request_Management_System.Data.Repository
 
             var parameters = new List<DbParametersSql.QueryParameters>
             {
-                DbParametersSql.SetValues(
-                    "@UserId", SqlDbType.Int, userId)
+                DbParametersSql.SetValues("@UserId", SqlDbType.Int, userId)
             };
 
             DataTable table = _baseSqlDL.ExecuteReader(query, parameters);
@@ -384,8 +361,8 @@ namespace Letter_Request_Management_System.Data.Repository
             return table.Rows[0]["FullName"]?.ToString();
         }
 
-        // Retrieve the approved letter and the signature of the actual approver.
-        // This does not depend on PdfReference.
+        // Uses the current saved signature for the approver.
+       
         public (
             string LetterContent,
             string SignatureReference,
@@ -396,7 +373,10 @@ namespace Letter_Request_Management_System.Data.Repository
             const string query = @"
                 SELECT
                     LR.LetterContentSnapshot AS LetterContent,
-                    LA.SignatureReference,
+                    COALESCE(
+                        NULLIF(ASig.SignatureReference, ''),
+                        NULLIF(LA.SignatureReference, '')
+                    ) AS SignatureReference,
                     AdminUser.FullName AS ApproverName,
                     LA.ApprovedAt
                 FROM dbo.LetterRequests AS LR
@@ -404,18 +384,16 @@ namespace Letter_Request_Management_System.Data.Repository
                     ON LR.LetterRequestId = LA.LetterRequestId
                 INNER JOIN dbo.Users AS AdminUser
                     ON LA.ApprovedByUserId = AdminUser.UserId
+                LEFT JOIN dbo.AdminSignatures AS ASig
+                    ON ASig.UserId = LA.ApprovedByUserId
                 WHERE LR.LetterRequestId = @LetterRequestId
                   AND LR.UserId = @UserId
-                  AND LR.Status = 'Approved'
-                  AND LA.SignatureReference IS NOT NULL;";
+                  AND LR.Status = 'Approved';";
 
             var parameters = new List<DbParametersSql.QueryParameters>
             {
-                DbParametersSql.SetValues(
-                    "@LetterRequestId", SqlDbType.Int, letterRequestId),
-
-                DbParametersSql.SetValues(
-                    "@UserId", SqlDbType.Int, userId)
+                DbParametersSql.SetValues("@LetterRequestId", SqlDbType.Int, letterRequestId),
+                DbParametersSql.SetValues("@UserId", SqlDbType.Int, userId)
             };
 
             DataTable table = _baseSqlDL.ExecuteReader(query, parameters);
