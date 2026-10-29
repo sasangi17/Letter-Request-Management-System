@@ -1,1 +1,82 @@
-<p>employee works!</p>
+
+<div class="dashboard">
+
+  <header class="header">
+    <h2>Employee Dashboard</h2>
+
+    <button class="logout-button" (click)="logout()">
+      Logout
+    </button>
+  </header>
+
+  <section class="welcome">
+    <h1>Welcome, {{ employeeName }}!</h1>
+    <p>Here is your employee information and letter request summary.</p>
+  </section>
+
+  <!-- Employee details -->
+  <section class="employee-card">
+    <h2>My Details</h2>
+
+    <div class="details">
+      <p>
+        <strong>Name:</strong>
+        {{ employeeName }}
+      </p>
+
+      <p>
+        <strong>Email:</strong>
+        {{ employeeEmail || 'Not available' }}
+      </p>
+
+      <p>
+        <strong>Department:</strong>
+        {{ employeeDepartment || 'Not available' }}
+      </p>
+
+      <p>
+        <strong>Position:</strong>
+        {{ employeePosition || 'Not available' }}
+      </p>
+    </div>
+  </section>
+
+  <!-- Request summary -->
+  <section class="summary">
+
+    <div class="summary-card">
+      <h3>My Requests</h3>
+
+      <p class="number">
+        {{ isLoading ? '...' : myRequests }}
+      </p>
+
+      <span>Total requests submitted</span>
+    </div>
+
+    <div class="summary-card pending">
+      <h3>Pending Requests</h3>
+
+      <p class="number">
+        {{ isLoading ? '...' : pendingRequests }}
+      </p>
+
+      <span>Waiting for approval</span>
+    </div>
+
+  </section>
+
+  <!-- Loading and error messages -->
+  <p class="message" *ngIf="isLoading">
+    Loading your requests...
+  </p>
+
+  <div class="error" *ngIf="!isLoading && errorMessage">
+    <p>{{ errorMessage }}</p>
+
+    <button (click)="loadMyRequests()">
+      Try Again
+    </button>
+  </div>
+
+</div>
