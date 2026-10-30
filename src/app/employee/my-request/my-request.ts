@@ -1,3 +1,4 @@
+
 import {
   Component,
   OnInit,
@@ -11,7 +12,7 @@ import { HttpClient } from '@angular/common/http';
 import { Router, RouterModule } from '@angular/router';
 
 import { AuthService } from '../../services/auth.service';
-import {Header} from "../../employee/header/header";
+import { Header } from '../../employee/header/header';
 
 interface LetterRequest {
   letterRequestId: number;
@@ -20,6 +21,14 @@ interface LetterRequest {
   requestDate: string;
   status: string;
   letterContent: string;
+}
+
+interface LetterPreview {
+  letterRequestId: number;
+  letterTypeName: string;
+  letterContent: string;
+  status: string;
+  watermark: string;
 }
 
 @Component({
@@ -34,6 +43,9 @@ export class MyRequests implements OnInit {
   private readonly requestUrl =
     'https://localhost:7103/api/LetterRequest/myrequest';
 
+  private readonly previewUrl =
+    'https://localhost:7103/api/LetterRequest/preview';
+
   private readonly downloadUrl =
     'https://localhost:7103/api/LetterRequest/letterdownload';
 
@@ -42,6 +54,11 @@ export class MyRequests implements OnInit {
   isLoading = true;
   errorMessage = '';
   downloadingRequestId: number | null = null;
+
+  // Preview modal properties
+  showPreview = false;
+  isPreviewLoading = false;
+  previewLetter: LetterPreview | null = null;
 
   constructor(
     private http: HttpClient,
@@ -99,37 +116,52 @@ export class MyRequests implements OnInit {
     });
   }
 
-viewLetter(request: LetterRequest): void {
-  if (request.status?.toLowerCase() !== 'pending') {
-    return;
+  // Display pending letter inside an Angular modal
+  viewLetter(request: LetterRequest): void {
+    if (request.status?.toLowerCase() !== 'pending') {
+      return;
+    }
+
+    this.showPreview = true;
+    this.isPreviewLoading = true;
+    this.previewLetter = null;
+    this.errorMessage = '';
+
+    this.http.get<LetterPreview>(
+      `${this.previewUrl}?id=${request.letterRequestId}`
+    ).subscribe({
+      next: response => {
+        if (response.status?.toLowerCase() !== 'pending') {
+          this.closePreview();
+          return;
+        }
+
+        this.previewLetter = response;
+        this.isPreviewLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: error => {
+        console.error('Preview failed:', error);
+
+        this.isPreviewLoading = false;
+        this.closePreview();
+
+        this.errorMessage = error.status === 401
+          ? 'Your session has expired. Please log in again.'
+          : 'Unable to preview this letter. Please try again.';
+
+        this.cdr.detectChanges();
+      }
+    });
   }
 
-  const previewUrl =
-    `https://localhost:7103/api/LetterRequest/preview?id=${request.letterRequestId}`;
+  closePreview(): void {
+    this.showPreview = false;
+    this.previewLetter = null;
+    this.isPreviewLoading = false;
+  }
 
-  this.http.get(previewUrl, {
-    responseType: 'blob'
-  }).subscribe({
-    next: file => {
-      const fileUrl = window.URL.createObjectURL(file);
-
-      window.open(fileUrl, '_blank');
-
-      setTimeout(() => {
-        window.URL.revokeObjectURL(fileUrl);
-      }, 60000);
-    },
-    error: error => {
-      console.error('Preview failed:', error);
-
-      this.errorMessage =
-        'Unable to preview this letter. Please try again.';
-
-      this.cdr.detectChanges();
-    }
-  });
-}
-
+  // Only approved letters can be downloaded
   downloadLetter(request: LetterRequest): void {
     if (request.status?.toLowerCase() !== 'approved') {
       return;
