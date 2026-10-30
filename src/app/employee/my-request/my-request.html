@@ -2,17 +2,6 @@
 
 <main class="page-container">
 
-  <div class="page-heading">
-    <div>
-      <h1>My Requests</h1>
-      <p>View and manage your submitted letter requests.</p>
-    </div>
-
-    <button class="new-request-btn" (click)="goToRequestLetter()">
-      + Request New Letter
-    </button>
-  </div>
-
   <!-- Loading -->
   <div class="message-card" *ngIf="isLoading">
     Loading your requests...
@@ -30,9 +19,6 @@
     <h3>No Requests Found</h3>
     <p>You haven't submitted any letter requests yet.</p>
 
-    <button class="new-request-btn" (click)="goToRequestLetter()">
-      Request a Letter
-    </button>
 
   </div>
 
@@ -77,28 +63,26 @@
               </span>
             </td>
 
-            <td>
-  <!-- Pending request -->
-  <button
-    *ngIf="request.status.toLowerCase() === 'pending'"
-    class="view-btn"
-    (click)="viewLetter(request)">
-    View Letter
-  </button>
+           <td>
+  <ng-container [ngSwitch]="request.status.toLowerCase()">
 
-  <!-- Approved request -->
-  <button
-    *ngIf="request.status.toLowerCase() === 'approved'"
-    class="download-btn"
-    [disabled]="downloadingRequestId === request.letterRequestId"
-    (click)="downloadLetter(request)">
+    <button
+  *ngSwitchCase="'pending'"
+  type="button"
+  class="view-letter-btn"
+  (click)="viewLetter(request)">
+  View Letter
+</button>
 
-    {{
-      downloadingRequestId === request.letterRequestId
-        ? 'Downloading...'
-        : 'Download Signed Letter'
-    }}
-  </button>
+<button
+  *ngSwitchCase="'approved'"
+  type="button"
+  class="download-btn"
+  (click)="downloadLetter(request)">
+  Download Signed Letter
+</button>
+
+  </ng-container>
 </td>
 
           </tr>
@@ -109,3 +93,63 @@
   </section>
 
 </main>
+
+<!-- Pending Letter Preview Modal -->
+<div class="preview-overlay" *ngIf="showPreview">
+
+  <div class="preview-modal">
+
+    <div class="preview-header">
+      <div>
+        <h2>Letter Preview</h2>
+        <p>This letter is waiting for administrator approval.</p>
+      </div>
+
+      <button
+        type="button"
+        class="close-preview-btn"
+        (click)="closePreview()">
+        &times;
+      </button>
+    </div>
+
+    <div class="preview-warning">
+      NOT APPROVED - UNOFFICIAL PREVIEW
+    </div>
+
+    <div class="preview-loading" *ngIf="isPreviewLoading">
+      Loading letter preview...
+    </div>
+
+    <div class="letter-paper" *ngIf="!isPreviewLoading && previewLetter">
+
+      <div class="watermark">NOT APPROVED</div>
+
+      <div class="letter-content">
+        <h2>EMPLOYEE LETTER</h2>
+
+        <p class="letter-type">
+          {{ previewLetter.letterTypeName }}
+        </p>
+
+        <div class="letter-body">
+          {{ previewLetter.letterContent }}
+        </div>
+      </div>
+
+    </div>
+
+    <div class="preview-footer">
+      <p>This preview is not an approved or signed document.</p>
+
+      <button
+        type="button"
+        class="close-modal-btn"
+        (click)="closePreview()">
+        Close
+      </button>
+    </div>
+
+  </div>
+
+</div>

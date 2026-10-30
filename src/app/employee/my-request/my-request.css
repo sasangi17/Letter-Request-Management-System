@@ -5,42 +5,6 @@
   padding: 0 25px;
 }
 
-.page-heading {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 20px;
-  margin-bottom: 25px;
-}
-
-.page-heading h1 {
-  color: #17243b;
-  margin: 0 0 8px;
-}
-
-.page-heading p {
-  color: #64748b;
-  margin: 0;
-}
-
-.new-request-btn,
-.download-btn {
-  border: none;
-  border-radius: 6px;
-  padding: 11px 17px;
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.new-request-btn {
-  background: #17243b;
-  color: white;
-}
-
-.new-request-btn:hover {
-  background: #263b5c;
-}
-
 .requests-card,
 .empty-card,
 .message-card {
@@ -152,6 +116,229 @@ td {
   border-radius: 7px;
   margin-bottom: 20px;
 }
+
+/* Preview modal background */
+.preview-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.75);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  z-index: 9999;
+}
+
+/* Preview modal */
+.preview-modal {
+  width: 100%;
+  max-width: 850px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 25px;
+}
+
+/* Modal header */
+.preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.preview-header h2 {
+  color: #17243b;
+  margin: 0 0 6px;
+}
+
+.preview-header p {
+  color: #64748b;
+  margin: 0;
+}
+
+.close-preview-btn {
+  border: none;
+  background: transparent;
+  font-size: 30px;
+  cursor: pointer;
+  color: #475569;
+}
+
+/* Warning */
+.preview-warning {
+  text-align: center;
+  padding: 12px;
+  margin-bottom: 20px;
+  background: #fff4d6;
+  color: #946200;
+  font-weight: 700;
+  border: 1px solid #f5d98a;
+  border-radius: 5px;
+}
+
+/* Letter paper */
+.letter-paper {
+  position: relative;
+  overflow: hidden;
+  background: white;
+  min-height: 650px;
+  padding: 60px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* Watermark */
+.watermark {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-35deg);
+  font-size: clamp(30px, 7vw, 65px);
+  font-weight: 800;
+  color: rgba(180, 180, 180, 0.22);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Letter content */
+.letter-content {
+  position: relative;
+  z-index: 2;
+  color: #17243b;
+}
+
+.letter-content h2 {
+  text-align: center;
+  margin-bottom: 35px;
+}
+
+.letter-type {
+  font-weight: 600;
+  margin-bottom: 25px;
+}
+
+.letter-body {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.8;
+  font-size: 15px;
+}
+
+/* Modal footer */
+.preview-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.preview-footer p {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.close-modal-btn {
+  border: none;
+  background: #17243b;
+  color: white;
+  padding: 11px 25px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.close-modal-btn:hover {
+  background: #263b5c;
+}
+
+.preview-loading {
+  padding: 40px;
+  text-align: center;
+  color: #64748b;
+}
+
+/* General page styling */
+.page-container {
+  max-width: 1200px;
+  margin: 35px auto;
+  padding: 0 25px;
+  font-family: Arial, Helvetica, sans-serif;
+  color: #17243b;
+}
+
+/* Common button styling */
+.view-letter-btn,
+.download-btn,
+.close-modal-btn {
+  border: none;
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+/* View letter button */
+.view-letter-btn {
+  background: #e8eef7;
+  color: #17243b;
+}
+
+.view-letter-btn:hover {
+  background: #d5e0ef;
+}
+
+/* Download button */
+.download-btn {
+  background: #17243b;
+  color: white;
+}
+
+.download-btn:hover {
+  background: #263b5c;
+}
+
+/* Table row hover */
+tbody tr:hover {
+  background: #f8fafc;
+}
+
+/* Table heading */
+th {
+  font-weight: 600;
+}
+
+/* Consistent typography */
+.page-container h2,
+.page-container h3,
+.page-container p,
+.page-container span,
+.page-container td,
+.page-container th {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+@media (max-width: 600px) {
+  .preview-modal {
+    padding: 15px;
+  }
+
+  .letter-paper {
+    padding: 30px 20px;
+    min-height: 500px;
+  }
+
+  .preview-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
 
 @media (max-width: 700px) {
   .page-heading {
