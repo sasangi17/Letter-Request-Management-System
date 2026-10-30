@@ -1,0 +1,111 @@
+<app-header></app-header>
+
+<main class="page-container">
+
+  <div class="page-heading">
+    <div>
+      <h1>My Requests</h1>
+      <p>View and manage your submitted letter requests.</p>
+    </div>
+
+    <button class="new-request-btn" (click)="goToRequestLetter()">
+      + Request New Letter
+    </button>
+  </div>
+
+  <!-- Loading -->
+  <div class="message-card" *ngIf="isLoading">
+    Loading your requests...
+  </div>
+
+  <!-- Error -->
+  <div class="error-message" *ngIf="!isLoading && errorMessage">
+    {{ errorMessage }}
+  </div>
+
+  <!-- No requests -->
+  <div class="empty-card"
+       *ngIf="!isLoading && !errorMessage && requests.length === 0">
+
+    <h3>No Requests Found</h3>
+    <p>You haven't submitted any letter requests yet.</p>
+
+    <button class="new-request-btn" (click)="goToRequestLetter()">
+      Request a Letter
+    </button>
+
+  </div>
+
+  <!-- Requests table -->
+  <section class="requests-card"
+           *ngIf="!isLoading && requests.length > 0">
+
+    <div class="table-heading">
+      <h2>Submitted Requests</h2>
+      <span>{{ requests.length }} request(s)</span>
+    </div>
+
+    <div class="table-wrapper">
+
+      <table>
+        <thead>
+          <tr>
+            
+            <th>Letter Type</th>
+            <th>Request Date</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngFor="let request of requests">
+
+            
+
+            <td>{{ request.letterTypeName }}</td>
+
+            <td>{{ request.requestDate | date:'dd MMM yyyy' }}</td>
+
+            <td>
+              <span class="status"
+                    [ngClass]="{
+                      'pending': request.status.toLowerCase() === 'pending',
+                      'approved': request.status.toLowerCase() === 'approved'
+                    }">
+                {{ request.status }}
+              </span>
+            </td>
+
+            <td>
+  <!-- Pending request -->
+  <button
+    *ngIf="request.status.toLowerCase() === 'pending'"
+    class="view-btn"
+    (click)="viewLetter(request)">
+    View Letter
+  </button>
+
+  <!-- Approved request -->
+  <button
+    *ngIf="request.status.toLowerCase() === 'approved'"
+    class="download-btn"
+    [disabled]="downloadingRequestId === request.letterRequestId"
+    (click)="downloadLetter(request)">
+
+    {{
+      downloadingRequestId === request.letterRequestId
+        ? 'Downloading...'
+        : 'Download Signed Letter'
+    }}
+  </button>
+</td>
+
+          </tr>
+        </tbody>
+      </table>
+
+    </div>
+  </section>
+
+</main>

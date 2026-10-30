@@ -1,0 +1,65 @@
+<div class="login-container">
+
+  @if (!showRoleSelection()) {
+    <form (ngSubmit)="login()">
+      <h2>Letter Request Management System</h2>
+      <p class="subtitle">Sign in to your account</p>
+
+      <label for="email">Email</label>
+      <input
+        id="email"
+        type="email"
+        name="email"
+        [(ngModel)]="email"
+        placeholder="Enter your email"
+        autocomplete="username"
+        required
+      />
+
+      <label for="password">Password</label>
+      <input
+        id="password"
+        type="password"
+        name="password"
+        [(ngModel)]="password"
+        placeholder="Enter your password"
+        autocomplete="current-password"
+        required
+      />
+
+      <button
+        type="submit"
+        [disabled]="isLoading()"
+      >
+        {{ isLoading() ? 'Signing in...' : 'Login' }}
+      </button>
+    </form>
+  } @else {
+    <div class="role-selection">
+      <h2>Select your role</h2>
+      <p class="subtitle">
+        Choose how you want to access the system.
+      </p>
+
+      @for (role of availableRoles(); track role) {
+        <button
+          type="button"
+          [disabled]="isLoading()"
+          (click)="selectRole(role)"
+        >
+          Continue as {{ role }}
+        </button>
+      }
+
+      <button
+        type="button"
+        class="cancel-btn"
+        [disabled]="isLoading()"
+        (click)="cancelRoleSelection()"
+      >
+        Back to Login
+      </button>
+    </div>
+  }
+
+</div>
