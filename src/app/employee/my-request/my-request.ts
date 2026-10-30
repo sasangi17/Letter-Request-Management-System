@@ -1,4 +1,3 @@
-
 import {
   Component,
   OnInit,
@@ -34,9 +33,13 @@ interface LetterPreview {
 @Component({
   selector: 'app-my-requests',
   standalone: true,
-  imports: [CommonModule, RouterModule, Header],
+  imports: [
+    CommonModule,
+    RouterModule,
+    Header
+  ],
   templateUrl: './my-request.html',
-  styleUrl: './my-request.css',
+  styleUrl: './my-request.css'
 })
 export class MyRequests implements OnInit {
 
@@ -54,8 +57,6 @@ export class MyRequests implements OnInit {
   isLoading = true;
   errorMessage = '';
   downloadingRequestId: number | null = null;
-
-  // Preview modal properties
   showPreview = false;
   isPreviewLoading = false;
   previewLetter: LetterPreview | null = null;

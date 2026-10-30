@@ -2,17 +2,6 @@
 
 <main class="page-container">
 
-  <div class="page-heading">
-    <div>
-      <h1>My Requests</h1>
-      <p>View and manage your submitted letter requests.</p>
-    </div>
-
-    <button class="new-request-btn" (click)="goToRequestLetter()">
-      + Request New Letter
-    </button>
-  </div>
-
   <!-- Loading -->
   <div class="message-card" *ngIf="isLoading">
     Loading your requests...
@@ -78,18 +67,20 @@
   <ng-container [ngSwitch]="request.status.toLowerCase()">
 
     <button
-      *ngSwitchCase="'pending'"
-      type="button"
-      (click)="viewLetter(request)">
-      View Letter
-    </button>
+  *ngSwitchCase="'pending'"
+  type="button"
+  class="view-letter-btn"
+  (click)="viewLetter(request)">
+  View Letter
+</button>
 
-    <button
-      *ngSwitchCase="'approved'"
-      type="button"
-      (click)="downloadLetter(request)">
-      Download Signed Letter
-    </button>
+<button
+  *ngSwitchCase="'approved'"
+  type="button"
+  class="download-btn"
+  (click)="downloadLetter(request)">
+  Download Signed Letter
+</button>
 
   </ng-container>
 </td>

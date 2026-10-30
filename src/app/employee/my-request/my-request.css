@@ -5,42 +5,6 @@
   padding: 0 25px;
 }
 
-.page-heading {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 20px;
-  margin-bottom: 25px;
-}
-
-.page-heading h1 {
-  color: #17243b;
-  margin: 0 0 8px;
-}
-
-.page-heading p {
-  color: #64748b;
-  margin: 0;
-}
-
-.new-request-btn,
-.download-btn {
-  border: none;
-  border-radius: 6px;
-  padding: 11px 17px;
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.new-request-btn {
-  background: #17243b;
-  color: white;
-}
-
-.new-request-btn:hover {
-  background: #263b5c;
-}
-
 .requests-card,
 .empty-card,
 .message-card {
@@ -295,6 +259,68 @@ td {
   padding: 40px;
   text-align: center;
   color: #64748b;
+}
+
+/* General page styling */
+.page-container {
+  max-width: 1200px;
+  margin: 35px auto;
+  padding: 0 25px;
+  font-family: Arial, Helvetica, sans-serif;
+  color: #17243b;
+}
+
+/* Common button styling */
+.view-letter-btn,
+.download-btn,
+.close-modal-btn {
+  border: none;
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+/* View letter button */
+.view-letter-btn {
+  background: #e8eef7;
+  color: #17243b;
+}
+
+.view-letter-btn:hover {
+  background: #d5e0ef;
+}
+
+/* Download button */
+.download-btn {
+  background: #17243b;
+  color: white;
+}
+
+.download-btn:hover {
+  background: #263b5c;
+}
+
+/* Table row hover */
+tbody tr:hover {
+  background: #f8fafc;
+}
+
+/* Table heading */
+th {
+  font-weight: 600;
+}
+
+/* Consistent typography */
+.page-container h2,
+.page-container h3,
+.page-container p,
+.page-container span,
+.page-container td,
+.page-container th {
+  font-family: Arial, Helvetica, sans-serif;
 }
 
 @media (max-width: 600px) {
