@@ -1,9 +1,10 @@
 import { Component, OnInit, Inject, PLATFORM_ID ,ChangeDetectorRef } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../services/auth.service';
 import { finalize } from 'rxjs';
+import {Header} from "../employee/header/header";
 
 interface LetterRequest {
   letterRequestId: number;
@@ -13,7 +14,9 @@ interface LetterRequest {
 @Component({
   selector: 'app-employee',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule,
+  RouterModule,
+  Header],
   templateUrl: './employee.html',
   styleUrl: './employee.css'
 })

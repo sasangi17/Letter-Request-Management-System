@@ -1,0 +1,31 @@
+
+<header class="employee-header">
+
+  <div class="brand">
+    <h2>Letter Portal</h2>
+    <span>Employee Workspace</span>
+  </div>
+
+  <nav class="nav-links">
+    <a routerLink="/employee"
+       routerLinkActive="active"
+       [routerLinkActiveOptions]="{ exact: true }">
+      Dashboard
+    </a>
+
+    <a routerLink="/employee/employee-letter"
+       routerLinkActive="active">
+      Request Letter
+    </a>
+
+    <a routerLink="/employee/my-requests"
+       routerLinkActive="active">
+      My Requests
+    </a>
+  </nav>
+
+  <button class="logout-btn" (click)="logout()">
+    Logout
+  </button>
+
+</header>
