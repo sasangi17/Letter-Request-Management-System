@@ -15,6 +15,7 @@ namespace Letter_Request_Management_System.Controllers
         private readonly LetterRequestBusiness _business;
         private readonly AdminSignatureFileService _signatureFileService;
         private readonly SignedLetterPdfService _signedLetterPdfService;
+        
 
         public LetterRequestController(
             LetterRequestBusiness business,
@@ -24,6 +25,7 @@ namespace Letter_Request_Management_System.Controllers
             _business = business;
             _signatureFileService = signatureFileService;
             _signedLetterPdfService = signedLetterPdfService;
+
         }
 
         private int GetLoggedInUserId()
@@ -33,6 +35,7 @@ namespace Letter_Request_Management_System.Controllers
             return int.TryParse(userId, out int id) ? id : 0;
         }
 
+        // Create a new letter request
         [HttpPost("createrequest")]
         public IActionResult CreateRequest([FromBody] LetterRequestDto dto)
         {
@@ -60,6 +63,7 @@ namespace Letter_Request_Management_System.Controllers
             });
         }
 
+        // Get logged-in employee's requests
         [HttpGet("myrequest")]
         public IActionResult GetMyRequests()
         {
@@ -70,9 +74,41 @@ namespace Letter_Request_Management_System.Controllers
 
             return Ok(_business.GetMyRequests(userId));
         }
-        
-        
 
+        // Preview a pending letter inside the application
+        [HttpGet("preview")]
+        public IActionResult PreviewLetter(int id)
+        {
+            int userId = GetLoggedInUserId();
+
+            if (userId <= 0)
+                return Unauthorized();
+
+            if (id <= 0)
+                return BadRequest("Invalid letter request ID.");
+
+            var pendingLetter = _business.GetPendingLetterForPreview(
+                id,
+                userId);
+
+            if (pendingLetter == null)
+            {
+                return NotFound(
+                    "The pending letter was not found or is not available for preview.");
+            }
+
+            // Return letter content as JSON instead of a downloadable PDF.
+            return Ok(new
+            {
+                letterRequestId = pendingLetter.LetterRequestId,
+                letterTypeName = pendingLetter.LetterTypeName,
+                letterContent = pendingLetter.LetterContent,
+                status = pendingLetter.Status,
+                watermark = "NOT APPROVED"
+            });
+        }
+
+        // Download an approved letter with the administrator's signature
         [HttpGet("letterdownload")]
         public IActionResult DownloadLetter(int id)
         {
@@ -95,9 +131,12 @@ namespace Letter_Request_Management_System.Controllers
 
             var letter = approvedLetter.Value;
 
-            string? signatureImagePath =_signatureFileService.GetSignatureFullPath(letter.SignatureReference);
+            string? signatureImagePath =
+                _signatureFileService.GetSignatureFullPath(
+                    letter.SignatureReference);
 
-            if (string.IsNullOrWhiteSpace(signatureImagePath) || !System.IO.File.Exists(signatureImagePath))
+            if (string.IsNullOrWhiteSpace(signatureImagePath) ||
+                !System.IO.File.Exists(signatureImagePath))
             {
                 return NotFound(
                     "The administrator's signature image could not be found. Please ask the administrator to upload the signature again.");

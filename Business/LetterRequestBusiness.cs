@@ -56,5 +56,34 @@ namespace Letter_Request_Management_System.Business
 
             return _letterRequestRepository.GetApprovedLetterForDownload(letterRequestId,userId);
         }
+
+
+        public LetterRequestResponseDto? GetPendingLetterForPreview(
+            int letterRequestId,
+            int userId)
+        {
+            if (letterRequestId <= 0 || userId <= 0)
+                return null;
+
+            // Get the request belonging to this employee.
+            var request = _letterRequestRepository.GetRequestById(
+                letterRequestId,
+                userId);
+
+            if (request == null)
+                return null;
+
+            // Only pending letters can be previewed.
+            if (!string.Equals(
+                request.Status,
+                "Pending",
+                StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            return request;
+        }
+
     }
 }

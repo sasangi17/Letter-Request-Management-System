@@ -60,64 +60,106 @@ namespace Letter_Request_Management_System.Data.Repository
             return requests;
         }
 
+
         public int CreateRequest(int userId, int letterTypeId)
         {
-            const string query = @"
-                INSERT INTO dbo.LetterRequests
-                (
-                    UserId,
-                    LetterTypeId,
-                    Status,
-                    LetterContentSnapshot
-                )
-                OUTPUT INSERTED.LetterRequestId
-                SELECT
-                    u.UserId,
-                    lt.LetterTypeId,
-                    'Pending',
-                    REPLACE(
-                        REPLACE(
-                            REPLACE(
-                                REPLACE(
-                                    REPLACE(
-                                        REPLACE(
-                                            lt.TemplateContent,
-                                            '{{FullName}}', u.FullName
-                                        ),
-                                        '{{EmpNo}}', u.EmpNo
-                                    ),
-                                    '{{Email}}', u.Email
-                                ),
-                                '{{Department}}',
-                                COALESCE(u.Department, '')
-                            ),
-                            '{{Position}}',
-                            COALESCE(u.Position, '')
-                        ),
-                        '{{JoinDate}}',
-                        COALESCE(
-                            CONVERT(NVARCHAR(10), u.JoinDate, 23),
-                            ''
-                        )
-                    )
-                FROM dbo.Users AS u
-                CROSS JOIN dbo.LetterTypes AS lt
-                WHERE u.UserId = @UserId
-                  AND lt.LetterTypeId = @LetterTypeId;";
+            // Step 1: Retrieve the employee details and letter template
+            const string selectQuery = @"
+        SELECT
+            lt.TemplateContent,
+            u.FullName,
+            u.EmpNo,
+            u.Email,
+            u.Department,
+            u.Position,
+            u.JoinDate
+        FROM dbo.Users AS u
+        CROSS JOIN dbo.LetterTypes AS lt
+        WHERE u.UserId = @UserId
+          AND lt.LetterTypeId = @LetterTypeId;";
 
-            var parameters = new List<DbParametersSql.QueryParameters>
-            {
-                DbParametersSql.SetValues("@UserId", SqlDbType.Int, userId),
-                DbParametersSql.SetValues("@LetterTypeId", SqlDbType.Int, letterTypeId)
-            };
+            var selectParameters = new List<DbParametersSql.QueryParameters>
+    {
+        DbParametersSql.SetValues("@UserId", SqlDbType.Int, userId),
+        DbParametersSql.SetValues("@LetterTypeId", SqlDbType.Int, letterTypeId)
+    };
 
-            DataTable table = _baseSqlDL.ExecuteReader(query, parameters);
+            DataTable userTable = _baseSqlDL.ExecuteReader(selectQuery, selectParameters);
 
-            if (table.Rows.Count == 0)
+            
+            if (userTable.Rows.Count == 0)
                 return 0;
 
-            return Convert.ToInt32(table.Rows[0]["LetterRequestId"]);
+            DataRow row = userTable.Rows[0];
+
+            
+            string letterContent =
+                Convert.ToString(row["TemplateContent"]) ?? "";
+
+            letterContent = letterContent
+                .Replace("{{FullName}}",row["FullName"] == DBNull.Value? "": Convert.ToString(row["FullName"]) ?? "")
+                .Replace("{{EmpNo}}",row["EmpNo"] == DBNull.Value? "": Convert.ToString(row["EmpNo"]) ?? "")
+                .Replace("{{Email}}",row["Email"] == DBNull.Value? "": Convert.ToString(row["Email"]) ?? "")
+                .Replace("{{Department}}",row["Department"] == DBNull.Value? "": Convert.ToString(row["Department"]) ?? "")
+                .Replace("{{Position}}",row["Position"] == DBNull.Value? "": Convert.ToString(row["Position"]) ?? "")
+                .Replace("{{JoinDate}}",row["JoinDate"] == DBNull.Value? "": Convert.ToDateTime(row["JoinDate"]).ToString("yyyy-MM-dd")
+                );
+
+            const string insertQuery = @"
+        SET XACT_ABORT ON;
+
+        BEGIN TRY
+            BEGIN TRANSACTION;
+
+            DECLARE @NewRequest TABLE
+            (
+                LetterRequestId INT
+            );
+
+            INSERT INTO dbo.LetterRequests
+            (
+                UserId,
+                LetterTypeId,
+                Status,
+                LetterContentSnapshot
+            )
+            OUTPUT INSERTED.LetterRequestId
+                INTO @NewRequest (LetterRequestId)
+            VALUES
+            (
+                @UserId,
+                @LetterTypeId,
+                'Pending',
+                @LetterContentSnapshot
+            );
+
+            COMMIT TRANSACTION;
+
+            SELECT LetterRequestId
+            FROM @NewRequest;
+        END TRY
+        BEGIN CATCH
+            IF @@TRANCOUNT > 0
+                ROLLBACK TRANSACTION;
+
+            THROW;
+        END CATCH;";
+
+            var insertParameters = new List<DbParametersSql.QueryParameters>
+    {
+        DbParametersSql.SetValues("@UserId", SqlDbType.Int, userId),
+        DbParametersSql.SetValues("@LetterTypeId", SqlDbType.Int, letterTypeId),
+        DbParametersSql.SetValues("@LetterContentSnapshot",SqlDbType.NVarChar,letterContent)
+    };
+
+            DataTable resultTable = _baseSqlDL.ExecuteReader(insertQuery, insertParameters);
+
+            if (resultTable.Rows.Count == 0)
+                return 0;
+
+            return Convert.ToInt32(resultTable.Rows[0]["LetterRequestId"]);
         }
+
 
         public LetterRequestResponseDto? GetRequestById(
             int letterRequestId,

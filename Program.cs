@@ -77,6 +77,8 @@ builder.Services.AddScoped<AdminSignatureBusiness>();
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<AdminSignatureFileService>();
 builder.Services.AddScoped<SignedLetterPdfService>();
+builder.Services.AddScoped<PreviewLetterPdfService>();
+
 
 // JWT Configuration
 var jwtKey = builder.Configuration["Jwt:Key"]

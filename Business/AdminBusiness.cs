@@ -1,5 +1,4 @@
-﻿
-using Letter_Request_Management_System.Data.Repository;
+﻿using Letter_Request_Management_System.Data.Repository;
 using Letter_Request_Management_System.Models.Dto;
 using Letter_Request_Management_System.Services;
 
@@ -65,9 +64,7 @@ namespace Letter_Request_Management_System.Business
                 return 3;
 
             // Verify that the signature image exists.
-            string? signatureImagePath =
-                _signatureFileService.GetSignatureFullPath(
-                    signatureReference);
+            string? signatureImagePath = _signatureFileService.GetSignatureFullPath(signatureReference);
 
             if (string.IsNullOrWhiteSpace(signatureImagePath) ||
                 !File.Exists(signatureImagePath))
@@ -83,9 +80,7 @@ namespace Letter_Request_Management_System.Business
             if (string.IsNullOrWhiteSpace(adminName))
                 return 5;
 
-            // Save the approval without generating a PDF here.
-            // The signed PDF will be generated when the employee
-            // downloads the approved letter.
+           
             return _letterRequestRepository.ApproveRequest(
                 letterRequestId,
                 approvedByUserId,
