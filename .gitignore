@@ -35,3 +35,6 @@ yarn-error.log*
 .vscode/
 *.suo
 *.user
+
+# Generated signed letters and signatures
+App_Data/SignedLetters

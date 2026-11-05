@@ -1,4 +1,5 @@
 ﻿using Letter_Request_Management_System.Data.Repository;
+using Letter_Request_Management_System.Models.Domain;
 
 namespace Letter_Request_Management_System.Business
 {
@@ -11,29 +12,33 @@ namespace Letter_Request_Management_System.Business
             _repository = repository;
         }
 
-        public bool SaveSignatureReference(int userId,string signatureReference)
+        public bool SaveSignature(
+            int adminUserId,
+            byte[] signatureImage,
+            string contentType,
+            string? fileName)
         {
-            if (userId <= 0)
+            if (adminUserId <= 0 ||
+                signatureImage == null ||
+                signatureImage.Length == 0 ||
+                string.IsNullOrWhiteSpace(contentType))
             {
                 return false;
             }
 
-            if (string.IsNullOrWhiteSpace(signatureReference))
-            {
-                return false;
-            }
-
-            return _repository.SaveOrUpdateSignatureReference(userId,signatureReference);
+            return _repository.SaveOrUpdateSignature(
+                adminUserId,
+                signatureImage,
+                contentType,
+                fileName);
         }
 
-        public string? GetSignatureReference(int userId)
+        public AdminSignatureMl? GetSignature(int adminUserId)
         {
-            if (userId <= 0)
-            {
+            if (adminUserId <= 0)
                 return null;
-            }
 
-            return _repository.GetSignatureReference(userId);
+            return _repository.GetSignature(adminUserId);
         }
     }
 }

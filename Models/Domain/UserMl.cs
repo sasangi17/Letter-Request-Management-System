@@ -10,7 +10,9 @@
         public string? Department { get; set; }
         public string? Position { get; set; }
         public DateTime? JoinDate { get; set; }
+        public decimal? Salary { get; set; }
         public string? MobileNo { get; set; }
         public List<string> Roles { get; set; } = new();
+
     }
 }

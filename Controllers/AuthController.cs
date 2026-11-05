@@ -98,9 +98,7 @@ namespace Letter_Request_Management_System.Controllers
                 selectedRole = loginDto.SelectedRole!.Trim();
 
                 bool hasSelectedRole = roles.Any(role =>
-                    role.Equals(
-                        selectedRole,
-                        StringComparison.OrdinalIgnoreCase));
+                    role.Equals(selectedRole,StringComparison.OrdinalIgnoreCase));
 
                 if (!hasSelectedRole)
                 {
@@ -112,14 +110,11 @@ namespace Letter_Request_Management_System.Controllers
 
                 // Use the canonical role name from the database.
                 selectedRole = roles.First(role =>
-                    role.Equals(
-                        selectedRole,
-                        StringComparison.OrdinalIgnoreCase));
+                    role.Equals(selectedRole,StringComparison.OrdinalIgnoreCase));
             }
 
             // Generate a token only after credentials and role are verified.
-            string token = _jwtService.GenerateToken(
-                user, selectedRole);
+            string token = _jwtService.GenerateToken(user, selectedRole);
 
             var result = new UserDto
             {

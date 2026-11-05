@@ -8,16 +8,16 @@ namespace Letter_Request_Management_System.Business
     {
         private readonly LetterRequestRepository _letterRequestRepository;
         private readonly AdminSignatureBusiness _adminSignatureBusiness;
-        private readonly AdminSignatureFileService _signatureFileService;
+        private readonly SignedLetterPdfService _signedLetterPdfService;
 
         public AdminBusiness(
             LetterRequestRepository letterRequestRepository,
             AdminSignatureBusiness adminSignatureBusiness,
-            AdminSignatureFileService signatureFileService)
+            SignedLetterPdfService signedLetterPdfService)
         {
             _letterRequestRepository = letterRequestRepository;
             _adminSignatureBusiness = adminSignatureBusiness;
-            _signatureFileService = signatureFileService;
+            _signedLetterPdfService = signedLetterPdfService;
         }
 
         public List<AdminLetterRequestDto> GetAllRequests()
@@ -31,14 +31,23 @@ namespace Letter_Request_Management_System.Business
                 letterRequestId);
         }
 
-        public int ApproveRequest(
+
+        public int RejectRequest(
             int letterRequestId,
-            int approvedByUserId)
+            int rejectedByUserId,
+            string rejectionReason)
         {
-            if (letterRequestId <= 0 || approvedByUserId <= 0)
+            // Step 1: Validate input.
+            if (letterRequestId <= 0 || rejectedByUserId <= 0)
                 return 0;
 
-            // Get the requested letter.
+            if (string.IsNullOrWhiteSpace(rejectionReason))
+                return 6;
+
+            if (rejectionReason.Length > 1000)
+                return 7;
+
+            // Step 2: Check whether the request exists.
             var request =
                 _letterRequestRepository.GetAdminRequestById(
                     letterRequestId);
@@ -46,7 +55,7 @@ namespace Letter_Request_Management_System.Business
             if (request == null)
                 return 0;
 
-            // Only pending requests can be approved.
+            // Step 3: Check whether the request is Pending.
             if (!string.Equals(
                 request.Status,
                 "Pending",
@@ -55,24 +64,49 @@ namespace Letter_Request_Management_System.Business
                 return 2;
             }
 
-            // Get the administrator's saved signature reference.
-            string? signatureReference =
-                _adminSignatureBusiness.GetSignatureReference(
-                    approvedByUserId);
+            // Step 4: Save rejection details.
+            return _letterRequestRepository.RejectRequest(
+                letterRequestId,
+                rejectedByUserId,
+                rejectionReason.Trim());
+        }
 
-            if (string.IsNullOrWhiteSpace(signatureReference))
+
+        public int ApproveRequest(int letterRequestId,int approvedByUserId)
+        {
+            if (letterRequestId <= 0 || approvedByUserId <= 0)
+                return 0;
+
+            // Get the employee's request.
+            var request =
+                _letterRequestRepository.GetAdminRequestById(
+                    letterRequestId);
+
+            if (request == null)
+                return 0;
+
+            // Check request status.
+            if (!string.Equals(
+                request.Status,
+                "Pending",
+                StringComparison.OrdinalIgnoreCase))
+            {
+                return 2;
+            }
+
+            // Get the admin's saved signature.
+            var signature =_adminSignatureBusiness.GetSignature(approvedByUserId);
+
+            if (signature == null)
                 return 3;
 
-            // Verify that the signature image exists.
-            string? signatureImagePath = _signatureFileService.GetSignatureFullPath(signatureReference);
-
-            if (string.IsNullOrWhiteSpace(signatureImagePath) ||
-                !File.Exists(signatureImagePath))
+            if (signature.SignatureImage == null ||
+                signature.SignatureImage.Length == 0)
             {
                 return 4;
             }
 
-            // Verify that the administrator exists.
+            // Get the admin's full name.
             string? adminName =
                 _letterRequestRepository.GetUserFullName(
                     approvedByUserId);
@@ -80,12 +114,25 @@ namespace Letter_Request_Management_System.Business
             if (string.IsNullOrWhiteSpace(adminName))
                 return 5;
 
-           
+            // Generate the signed PDF.
+            DateTime approvedAt = DateTime.Now;
+
+            string pdfReference =
+                _signedLetterPdfService.GenerateSignedPdf(
+                    request.LetterContent,
+                    adminName,
+                    approvedAt,
+                    signature.SignatureImage);
+
+            // Save approval and signature snapshot in SQL Server.
             return _letterRequestRepository.ApproveRequest(
                 letterRequestId,
                 approvedByUserId,
-                signatureReference,
-                string.Empty);
+                signature.SignatureImage,
+                signature.ContentType,
+                pdfReference);
+
+
         }
     }
 }

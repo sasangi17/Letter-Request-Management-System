@@ -13,19 +13,14 @@ namespace Letter_Request_Management_System.Controllers
     public class LetterRequestController : ControllerBase
     {
         private readonly LetterRequestBusiness _business;
-        private readonly AdminSignatureFileService _signatureFileService;
         private readonly SignedLetterPdfService _signedLetterPdfService;
-        
 
         public LetterRequestController(
             LetterRequestBusiness business,
-            AdminSignatureFileService signatureFileService,
             SignedLetterPdfService signedLetterPdfService)
         {
             _business = business;
-            _signatureFileService = signatureFileService;
             _signedLetterPdfService = signedLetterPdfService;
-
         }
 
         private int GetLoggedInUserId()
@@ -35,35 +30,50 @@ namespace Letter_Request_Management_System.Controllers
             return int.TryParse(userId, out int id) ? id : 0;
         }
 
-        // Create a new letter request
+        // Create a new letter request.
         [HttpPost("createrequest")]
-        public IActionResult CreateRequest([FromBody] LetterRequestDto dto)
+        public IActionResult CreateRequest(
+            [FromBody] LetterRequestDto dto)
         {
             int userId = GetLoggedInUserId();
 
             if (userId <= 0)
                 return Unauthorized();
 
-            if (dto == null || dto.LetterTypeId <= 0)
-                return BadRequest("A valid letter type is required.");
-
-            int requestId = _business.CreateRequest(userId, dto.LetterTypeId);
-
-            if (requestId == 0)
+            if (dto == null ||
+                string.IsNullOrWhiteSpace(dto.LetterTypeName))
             {
-                return BadRequest(
-                    "Could not create the request. Check that the selected letter type exists.");
+                return BadRequest("A valid letter type name is required.");
             }
 
-            return Ok(new
+            try
             {
-                message = "Letter request created successfully.",
-                letterRequestId = requestId,
-                status = "Pending"
-            });
+                int requestId = _business.CreateRequest(userId,dto.LetterTypeName);
+
+                if (requestId == 0)
+                {
+                    return BadRequest("Could not create the letter request.");
+                }
+
+                return Ok(new
+                {
+                    message = "Letter request created successfully.",
+                    letterRequestId = requestId,
+                    letterTypeName = dto.LetterTypeName,
+                    status = "Pending"
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
-        // Get logged-in employee's requests
+        // Get logged-in employee's requests.
         [HttpGet("myrequest")]
         public IActionResult GetMyRequests()
         {
@@ -75,7 +85,7 @@ namespace Letter_Request_Management_System.Controllers
             return Ok(_business.GetMyRequests(userId));
         }
 
-        // Preview a pending letter inside the application
+        // Preview a pending letter.
         [HttpGet("preview")]
         public IActionResult PreviewLetter(int id)
         {
@@ -87,17 +97,13 @@ namespace Letter_Request_Management_System.Controllers
             if (id <= 0)
                 return BadRequest("Invalid letter request ID.");
 
-            var pendingLetter = _business.GetPendingLetterForPreview(
-                id,
-                userId);
+            var pendingLetter = _business.GetPendingLetterForPreview(id, userId);
 
             if (pendingLetter == null)
             {
-                return NotFound(
-                    "The pending letter was not found or is not available for preview.");
+                return NotFound("The pending letter was not found or is not available for preview.");
             }
 
-            // Return letter content as JSON instead of a downloadable PDF.
             return Ok(new
             {
                 letterRequestId = pendingLetter.LetterRequestId,
@@ -108,7 +114,7 @@ namespace Letter_Request_Management_System.Controllers
             });
         }
 
-        // Download an approved letter with the administrator's signature
+        // Download an approved letter with the saved signature snapshot.
         [HttpGet("letterdownload")]
         public IActionResult DownloadLetter(int id)
         {
@@ -120,26 +126,11 @@ namespace Letter_Request_Management_System.Controllers
             if (id <= 0)
                 return BadRequest("Invalid letter request ID.");
 
-            var approvedLetter =
-                _business.GetApprovedLetterForDownload(id, userId);
+            var letter = _business.GetApprovedLetterForDownload(id, userId);
 
-            if (approvedLetter == null)
+            if (letter == null)
             {
-                return NotFound(
-                    "The letter was not found, is not approved, or has no saved signature reference.");
-            }
-
-            var letter = approvedLetter.Value;
-
-            string? signatureImagePath =
-                _signatureFileService.GetSignatureFullPath(
-                    letter.SignatureReference);
-
-            if (string.IsNullOrWhiteSpace(signatureImagePath) ||
-                !System.IO.File.Exists(signatureImagePath))
-            {
-                return NotFound(
-                    "The administrator's signature image could not be found. Please ask the administrator to upload the signature again.");
+                return NotFound("The letter was not found, is not approved, or has no saved signature.");
             }
 
             try
@@ -149,22 +140,102 @@ namespace Letter_Request_Management_System.Controllers
                         letter.LetterContent,
                         letter.ApproverName,
                         letter.ApprovedAt,
-                        signatureImagePath);
+                        letter.SignatureImage);
 
-                string fileName = $"Approved-Letter-{id}.pdf";
+                string fileName = BuildPdfFileName(
+                    letter.EmployeeName,
+                    letter.LetterTypeName,
+                    id);
 
-                return File(
-                    pdfBytes,
-                    "application/pdf",
-                    fileName);
+                return File(pdfBytes, "application/pdf", fileName);
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex);
 
-                return StatusCode(
-                    500,
-                    "An error occurred while generating the approved letter PDF. Check the backend terminal for details.");
+                return StatusCode(500,
+                    "An error occurred while generating the approved letter PDF.");
+            }
+        }
+
+        // Builds a name like "Ariyan's Service Letter.pdf"
+        private static string BuildPdfFileName(
+            string employeeName,
+            string letterTypeName,
+            int fallbackId)
+        {
+            if (string.IsNullOrWhiteSpace(employeeName) ||
+                string.IsNullOrWhiteSpace(letterTypeName))
+            {
+                return $"Approved-Letter-{fallbackId}.pdf";
+            }
+
+            // Capitalise each word of the letter type: "service letter" -> "Service Letter"
+            string typeName = System.Globalization.CultureInfo.CurrentCulture
+                .TextInfo.ToTitleCase(letterTypeName.Trim().ToLowerInvariant());
+
+            string name = $"{employeeName.Trim()}'s {typeName}";
+
+            // Remove characters not allowed in file names
+            foreach (char c in Path.GetInvalidFileNameChars())
+                name = name.Replace(c.ToString(), string.Empty);
+
+            return $"{name}.pdf";
+        }
+
+        // PUT: /api/LetterRequest/cancel?id=17
+        // Cancel the logged-in employee's pending request.
+        [HttpPut("cancel")]
+        public IActionResult CancelRequest([FromQuery] int id)
+        {
+            int userId = GetLoggedInUserId();
+
+            if (userId <= 0)
+                return Unauthorized();
+
+            if (id <= 0)
+            {
+                return BadRequest(new
+                {
+                    message = "A valid letter request ID is required."
+                });
+            }
+
+            try
+            {
+                int result = _business.CancelRequest(id, userId);
+
+                if (result == 0)
+                {
+                    return NotFound(new
+                    {
+                        message = "The request was not found, does not belong to you, or is no longer pending."
+                    });
+                }
+
+                if (result != 1)
+                {
+                    return StatusCode(500, new
+                    {
+                        message = "The letter request could not be cancelled."
+                    });
+                }
+
+                return Ok(new
+                {
+                    message = "Letter request cancelled successfully.",
+                    letterRequestId = id,
+                    status = "Cancelled"
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+
+                return StatusCode(500, new
+                {
+                    message = "An error occurred while cancelling the letter request."
+                });
             }
         }
     }

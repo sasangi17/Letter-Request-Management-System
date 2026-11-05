@@ -1,6 +1,5 @@
 ﻿using Letter_Request_Management_System.Business;
 using Letter_Request_Management_System.Models.Dto;
-using Letter_Request_Management_System.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -14,29 +13,27 @@ namespace Letter_Request_Management_System.Controllers
     {
         private readonly AdminBusiness _adminBusiness;
         private readonly AdminSignatureBusiness _adminSignatureBusiness;
-        private readonly AdminSignatureFileService _signatureFileService;
 
         public AdminController(
             AdminBusiness adminBusiness,
-            AdminSignatureBusiness adminSignatureBusiness,
-            AdminSignatureFileService signatureFileService)
+            AdminSignatureBusiness adminSignatureBusiness)
         {
             _adminBusiness = adminBusiness;
             _adminSignatureBusiness = adminSignatureBusiness;
-            _signatureFileService = signatureFileService;
         }
 
         // GET: /api/Admin/requests
+        // Retrieve all employee letter requests.
         [HttpGet("requests")]
         public IActionResult GetAllRequests()
         {
             var requests = _adminBusiness.GetAllRequests();
+
             return Ok(requests);
         }
 
-       
         // PUT: /api/Admin/requestsapprove?id=3
-
+        // Approve an employee letter request.
         [HttpPut("requestsapprove")]
         public IActionResult ApproveRequest([FromQuery] int id)
         {
@@ -48,7 +45,8 @@ namespace Letter_Request_Management_System.Controllers
                 });
             }
 
-            string? userIdClaim =User.FindFirstValue(ClaimTypes.NameIdentifier);
+            string? userIdClaim =
+                User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (!int.TryParse(userIdClaim, out int adminUserId))
             {
@@ -119,7 +117,6 @@ namespace Letter_Request_Management_System.Controllers
             }
             catch (Exception ex)
             {
-                // Log ex on the backend for debugging.
                 Console.WriteLine(ex);
 
                 return StatusCode(500, new
@@ -130,14 +127,126 @@ namespace Letter_Request_Management_System.Controllers
         }
 
 
-
-
-        // POST: /api/Admin/signature
         [HttpPost("signature")]
         [Consumes("multipart/form-data")]
-        public async Task<IActionResult> UploadSignature(IFormFile signature)
+        public async Task<IActionResult> UploadSignature(IFormFile? signature)
         {
-            string? userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            try
+            {
+                var adminUserIdValue = User.FindFirstValue(
+                    System.Security.Claims.ClaimTypes.NameIdentifier);
+
+                if (!int.TryParse(adminUserIdValue, out int adminUserId))
+                {
+                    return Unauthorized(new
+                    {
+                        message = "Invalid admin user."
+                    });
+                }
+
+                if (signature == null || signature.Length == 0)
+                {
+                    return BadRequest(new
+                    {
+                        message = "Please select a signature image."
+                    });
+                }
+
+                if (signature.Length > 2 * 1024 * 1024)
+                {
+                    return BadRequest(new
+                    {
+                        message = "Signature image must not exceed 2 MB."
+                    });
+                }
+
+                string extension = Path.GetExtension(signature.FileName)
+                    .ToLowerInvariant();
+
+                if (extension != ".png" &&
+                    extension != ".jpg" &&
+                    extension != ".jpeg")
+                {
+                    return BadRequest(new
+                    {
+                        message = "Only PNG and JPG signature images are allowed."
+                    });
+                }
+
+                using var memoryStream = new MemoryStream();
+
+                await signature.CopyToAsync(memoryStream);
+
+                byte[] signatureBytes = memoryStream.ToArray();
+
+                bool isPng =
+                    signatureBytes.Length >= 8 &&
+                    signatureBytes[0] == 0x89 &&
+                    signatureBytes[1] == 0x50 &&
+                    signatureBytes[2] == 0x4E &&
+                    signatureBytes[3] == 0x47 &&
+                    signatureBytes[4] == 0x0D &&
+                    signatureBytes[5] == 0x0A &&
+                    signatureBytes[6] == 0x1A &&
+                    signatureBytes[7] == 0x0A;
+
+                bool isJpeg =
+                    signatureBytes.Length >= 3 &&
+                    signatureBytes[0] == 0xFF &&
+                    signatureBytes[1] == 0xD8 &&
+                    signatureBytes[2] == 0xFF;
+
+                if (!isPng && !isJpeg)
+                {
+                    return BadRequest(new
+                    {
+                        message = "The uploaded file is not a valid PNG or JPG image."
+                    });
+                }
+
+                string contentType = isPng
+                    ? "image/png"
+                    : "image/jpeg";
+
+                bool saved = _adminSignatureBusiness.SaveSignature(
+                    adminUserId,
+                    signatureBytes,
+                    contentType,
+                    Path.GetFileName(signature.FileName));
+
+                if (!saved)
+                {
+                    return StatusCode(500, new
+                    {
+                        message = "Failed to save the admin signature."
+                    });
+                }
+
+                return Ok(new
+                {
+                    message = "Admin signature uploaded successfully."
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("SIGNATURE UPLOAD ERROR:");
+                Console.WriteLine(ex.ToString());
+
+                return StatusCode(500, new
+                {
+                    message = "An error occurred while saving the signature.",
+                    error = ex.Message
+                });
+            }
+        }
+
+        // GET: /api/Admin/signature
+        // Retrieve the logged-in admin's saved signature.
+        [HttpGet("signature")]
+        public IActionResult GetSignature()
+        {
+            string? userIdClaim =
+                User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (!int.TryParse(userIdClaim, out int adminUserId))
             {
@@ -147,50 +256,132 @@ namespace Letter_Request_Management_System.Controllers
                 });
             }
 
-            if (signature == null || signature.Length == 0)
+            var signature =
+                _adminSignatureBusiness.GetSignature(adminUserId);
+
+            if (signature == null ||
+                signature.SignatureImage == null ||
+                signature.SignatureImage.Length == 0)
+            {
+                return NotFound(new
+                {
+                    message = "No signature has been uploaded."
+                });
+            }
+
+            return File(
+                signature.SignatureImage,
+                signature.ContentType
+            );
+        }
+
+        // PUT: /api/Admin/requestsreject?id=17
+        // Reject an employee letter request.
+        [HttpPut("requestsreject")]
+        public IActionResult RejectRequest(
+            [FromQuery] int id,
+            [FromBody] RejectRequestDto dto)
+        {
+            if (id <= 0)
             {
                 return BadRequest(new
                 {
-                    message = "Please select a signature image."
+                    message = "A valid letter request ID is required."
+                });
+            }
+
+            if (dto == null ||
+                string.IsNullOrWhiteSpace(dto.RejectionReason))
+            {
+                return BadRequest(new
+                {
+                    message = "A rejection reason is required."
+                });
+            }
+
+            if (dto.RejectionReason.Trim().Length > 1000)
+            {
+                return BadRequest(new
+                {
+                    message = "The rejection reason must not exceed 1000 characters."
+                });
+            }
+
+            string? userIdClaim =
+                User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (!int.TryParse(userIdClaim, out int adminUserId))
+            {
+                return Unauthorized(new
+                {
+                    message = "The authenticated admin user ID is missing."
                 });
             }
 
             try
             {
-                // Save the image in the protected folder.
-                string signatureReference = await _signatureFileService.SaveSignatureAsync(signature);
+                int result = _adminBusiness.RejectRequest(
+                    id,
+                    adminUserId,
+                    dto.RejectionReason);
 
-                // Save sign reference in SQL Server.
-                bool saved =_adminSignatureBusiness.SaveSignatureReference(adminUserId,signatureReference);
+                if (result == 0)
+                {
+                    return NotFound(new
+                    {
+                        message = "Letter request not found."
+                    });
+                }
 
-                if (!saved)
+                if (result == 2)
+                {
+                    return Conflict(new
+                    {
+                        message = "This request has already been processed."
+                    });
+                }
+
+                if (result == 6)
+                {
+                    return BadRequest(new
+                    {
+                        message = "A rejection reason is required."
+                    });
+                }
+
+                if (result == 7)
+                {
+                    return BadRequest(new
+                    {
+                        message = "The rejection reason must not exceed 1000 characters."
+                    });
+                }
+
+                if (result != 1)
                 {
                     return StatusCode(500, new
                     {
-                        message = "The signature reference could not be saved."
+                        message = "The request could not be rejected."
                     });
                 }
 
                 return Ok(new
                 {
-                    message = "Admin signature uploaded and database reference saved successfully.",
-                    signatureReference
+                    message = "Letter request rejected successfully.",
+                    letterRequestId = id,
+                    status = "Rejected",
+                    rejectionReason = dto.RejectionReason.Trim()
                 });
             }
-            catch (ArgumentException ex)
+            catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
-            }
-            catch (Exception)
-            {
+                Console.WriteLine(ex);
+
                 return StatusCode(500, new
                 {
-                    message = "An error occurred while saving the signature. Check the backend terminal for details."
+                    message = "An error occurred while rejecting the letter request."
                 });
             }
         }
-
-
-
     }
 }

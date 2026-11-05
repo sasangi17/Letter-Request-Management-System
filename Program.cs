@@ -1,12 +1,13 @@
-using System.Text;
 using Letter_Request_Management_System.Business;
 using Letter_Request_Management_System.Data.Repository;
 using Letter_Request_Management_System.Data.Repository.BaseSQLDbConnection;
+using Letter_Request_Management_System.LetterTemplates;
 using Letter_Request_Management_System.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using QuestPDF.Infrastructure;
+using System.Text;
 
 QuestPDF.Settings.License = LicenseType.Community;
 
@@ -61,23 +62,23 @@ builder.Services.AddScoped<BaseSqlDL>();
 // Repositories
 builder.Services.AddScoped<AuthRepository>();
 builder.Services.AddScoped<LetterRequestRepository>();
-builder.Services.AddScoped<LetterTypeRepository>();
 builder.Services.AddScoped<AdminSignatureRepository>();
 
 
 // Business
 builder.Services.AddScoped<AuthBusiness>();
 builder.Services.AddScoped<AdminBusiness>();
-builder.Services.AddScoped<LetterTypeBusiness>();
 builder.Services.AddScoped<LetterRequestBusiness>();
 builder.Services.AddScoped<AdminSignatureBusiness>();
 
 
 // Services
 builder.Services.AddScoped<JwtService>();
-builder.Services.AddScoped<AdminSignatureFileService>();
 builder.Services.AddScoped<SignedLetterPdfService>();
 builder.Services.AddScoped<PreviewLetterPdfService>();
+builder.Services.AddScoped<ServiceLetterTemplate>();
+builder.Services.AddScoped<EmploymentConfirmationLetterTemplate>();
+builder.Services.AddScoped<SalaryConfirmationLetterTemplate>();
 
 
 // JWT Configuration
