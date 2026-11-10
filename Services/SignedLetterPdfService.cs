@@ -45,16 +45,11 @@ namespace Letter_Request_Management_System.Services
             DateTime approvedAt,
             byte[] signatureImage)
         {
-            ValidateInputs(
-                letterContent,
-                approverName,
-                signatureImage);
+            ValidateInputs(letterContent,approverName,signatureImage);
 
             string fileName = $"{Guid.NewGuid():N}.pdf";
 
-            string fullPath = Path.Combine(
-                _pdfFolder,
-                fileName);
+            string fullPath = Path.Combine(_pdfFolder,fileName);
 
             CreateDocument(
                 letterContent,
@@ -76,21 +71,18 @@ namespace Letter_Request_Management_System.Services
         {
             if (string.IsNullOrWhiteSpace(letterContent))
             {
-                throw new ArgumentException(
-                    "Letter content is required.");
+                throw new ArgumentException("Letter content is required.");
             }
 
             if (string.IsNullOrWhiteSpace(approverName))
             {
-                throw new ArgumentException(
-                    "Approver name is required.");
+                throw new ArgumentException("Approver name is required.");
             }
 
             if (signatureImage == null ||
                 signatureImage.Length == 0)
             {
-                throw new ArgumentException(
-                    "Signature image is required.");
+                throw new ArgumentException("Signature image is required.");
             }
         }
 
@@ -108,8 +100,7 @@ namespace Letter_Request_Management_System.Services
                     page.Size(PageSizes.A4);
                     page.Margin(45);
 
-                    page.DefaultTextStyle(
-                        style => style.FontSize(12));
+                    page.DefaultTextStyle(style => style.FontSize(12));
 
                     page.Content().Column(column =>
                     {

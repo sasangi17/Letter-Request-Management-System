@@ -13,6 +13,7 @@
         public decimal? Salary { get; set; }
         public string? MobileNo { get; set; }
         public List<string> Roles { get; set; } = new();
+        public int? AdminSignatureId { get; set; }
 
     }
 }

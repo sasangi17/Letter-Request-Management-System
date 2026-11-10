@@ -34,9 +34,7 @@ namespace Letter_Request_Management_System.Controllers
             }
 
             // Verify the user's credentials.
-            var user = _authBusiness.Login(
-                loginDto.Email.Trim(),
-                loginDto.Password);
+            var user = _authBusiness.Login(loginDto.Email.Trim(),loginDto.Password);
 
             if (user == null)
             {
@@ -97,8 +95,7 @@ namespace Letter_Request_Management_System.Controllers
             {
                 selectedRole = loginDto.SelectedRole!.Trim();
 
-                bool hasSelectedRole = roles.Any(role =>
-                    role.Equals(selectedRole,StringComparison.OrdinalIgnoreCase));
+                bool hasSelectedRole = roles.Any(role => role.Equals(selectedRole,StringComparison.OrdinalIgnoreCase));
 
                 if (!hasSelectedRole)
                 {
@@ -109,8 +106,7 @@ namespace Letter_Request_Management_System.Controllers
                 }
 
                 // Use the canonical role name from the database.
-                selectedRole = roles.First(role =>
-                    role.Equals(selectedRole,StringComparison.OrdinalIgnoreCase));
+                selectedRole = roles.First(role => role.Equals(selectedRole,StringComparison.OrdinalIgnoreCase));
             }
 
             // Generate a token only after credentials and role are verified.

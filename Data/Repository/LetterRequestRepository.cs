@@ -35,9 +35,7 @@ namespace Letter_Request_Management_System.Data.Repository
                     ON lr.UserId = u.UserId
                 ORDER BY lr.RequestDate DESC;";
 
-            DataTable table = _baseSqlDL.ExecuteReader(
-                query,
-                new List<DbParametersSql.QueryParameters>());
+            DataTable table = _baseSqlDL.ExecuteReader(query,new List<DbParametersSql.QueryParameters>());
 
             var requests = new List<AdminLetterRequestDto>();
 
@@ -531,9 +529,7 @@ END CATCH;";
 
         // GET approved letter content and signature image for download (Employee)
 
-        public ApprovedLetterDownloadDto? GetApprovedLetterForDownload(
-            int letterRequestId,
-            int userId)
+        public ApprovedLetterDownloadDto? GetApprovedLetterForDownload(int letterRequestId,int userId)
         {
             const string query = @"
         SELECT

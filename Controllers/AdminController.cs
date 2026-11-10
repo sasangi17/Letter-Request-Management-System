@@ -32,9 +32,9 @@ namespace Letter_Request_Management_System.Controllers
             return Ok(requests);
         }
 
-        // PUT: /api/Admin/requestsapprove?id=3
+        // POST: /api/Admin/requestsapprove?id=3
         // Approve an employee letter request.
-        [HttpPut("requestsapprove")]
+        [HttpPost("requestsapprove")]
         public IActionResult ApproveRequest([FromQuery] int id)
         {
             if (id <= 0)
@@ -45,8 +45,7 @@ namespace Letter_Request_Management_System.Controllers
                 });
             }
 
-            string? userIdClaim =
-                User.FindFirstValue(ClaimTypes.NameIdentifier);
+            string? userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (!int.TryParse(userIdClaim, out int adminUserId))
             {
@@ -133,8 +132,7 @@ namespace Letter_Request_Management_System.Controllers
         {
             try
             {
-                var adminUserIdValue = User.FindFirstValue(
-                    System.Security.Claims.ClaimTypes.NameIdentifier);
+                var adminUserIdValue = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
 
                 if (!int.TryParse(adminUserIdValue, out int adminUserId))
                 {
@@ -204,9 +202,7 @@ namespace Letter_Request_Management_System.Controllers
                     });
                 }
 
-                string contentType = isPng
-                    ? "image/png"
-                    : "image/jpeg";
+                string contentType = isPng ? "image/png" : "image/jpeg";
 
                 bool saved = _adminSignatureBusiness.SaveSignature(
                     adminUserId,
@@ -256,8 +252,7 @@ namespace Letter_Request_Management_System.Controllers
                 });
             }
 
-            var signature =
-                _adminSignatureBusiness.GetSignature(adminUserId);
+            var signature = _adminSignatureBusiness.GetSignature(adminUserId);
 
             if (signature == null ||
                 signature.SignatureImage == null ||
@@ -275,9 +270,9 @@ namespace Letter_Request_Management_System.Controllers
             );
         }
 
-        // PUT: /api/Admin/requestsreject?id=17
+        // POST: /api/Admin/requestsreject?id=17
         // Reject an employee letter request.
-        [HttpPut("requestsreject")]
+        [HttpPost("requestsreject")]
         public IActionResult RejectRequest(
             [FromQuery] int id,
             [FromBody] RejectRequestDto dto)

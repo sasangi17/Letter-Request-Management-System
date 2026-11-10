@@ -52,8 +52,7 @@ namespace Letter_Request_Management_System.Business
                 case "salary confirmation letter":
 
                     if (!employee.Salary.HasValue)
-                        throw new InvalidOperationException(
-                            "Salary information is not available for this employee.");
+                        throw new InvalidOperationException("Salary information is not available for this employee.");
 
                     letterContent = _salaryConfirmationLetterTemplate.GenerateLetter(employee);
                     break;
@@ -95,9 +94,7 @@ namespace Letter_Request_Management_System.Business
                 userId);
         }
 
-        public ApprovedLetterDownloadDto? GetApprovedLetterForDownload(
-    int letterRequestId,
-    int userId)
+        public ApprovedLetterDownloadDto? GetApprovedLetterForDownload(int letterRequestId,int userId)
         {
             if (letterRequestId <= 0 || userId <= 0)
                 return null;
@@ -135,5 +132,7 @@ namespace Letter_Request_Management_System.Business
                 letterRequestId,
                 userId);
         }
+
+
     }
 }

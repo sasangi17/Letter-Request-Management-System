@@ -26,17 +26,9 @@ namespace Letter_Request_Management_System.Services
 
         public string GenerateToken(UserMl user, string selectedRole)
         {
-            string issuer = _configuration["Jwt:Issuer"]
-                ?? throw new InvalidOperationException(
-                    "JWT issuer is not configured.");
-
-            string audience = _configuration["Jwt:Audience"]
-                ?? throw new InvalidOperationException(
-                    "JWT audience is not configured.");
-
-            string secret = _configuration["Jwt:Key"]
-                ?? throw new InvalidOperationException(
-                    "JWT signing key is not configured.");
+            string issuer = _configuration["Jwt:Issuer"] ?? throw new InvalidOperationException("JWT issuer is not configured.");
+            string audience = _configuration["Jwt:Audience"] ?? throw new InvalidOperationException("JWT audience is not configured.");
+            string secret = _configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT signing key is not configured.");
 
             // Ensure the selected role belongs to this user.
             bool hasRole = user.Roles.Exists(role =>

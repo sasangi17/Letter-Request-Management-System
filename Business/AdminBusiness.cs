@@ -1,6 +1,6 @@
 ﻿using Letter_Request_Management_System.Data.Repository;
 using Letter_Request_Management_System.Models.Dto;
-using Letter_Request_Management_System.Services;
+
 
 namespace Letter_Request_Management_System.Business
 {
@@ -8,16 +8,16 @@ namespace Letter_Request_Management_System.Business
     {
         private readonly LetterRequestRepository _letterRequestRepository;
         private readonly AdminSignatureBusiness _adminSignatureBusiness;
-        private readonly SignedLetterPdfService _signedLetterPdfService;
+        private readonly LetterPdfBusiness _letterPdfBusiness;
 
         public AdminBusiness(
             LetterRequestRepository letterRequestRepository,
             AdminSignatureBusiness adminSignatureBusiness,
-            SignedLetterPdfService signedLetterPdfService)
+            LetterPdfBusiness letterPdfBusiness)
         {
             _letterRequestRepository = letterRequestRepository;
             _adminSignatureBusiness = adminSignatureBusiness;
-            _signedLetterPdfService = signedLetterPdfService;
+            _letterPdfBusiness = letterPdfBusiness;
         }
 
         public List<AdminLetterRequestDto> GetAllRequests()
@@ -27,17 +27,13 @@ namespace Letter_Request_Management_System.Business
 
         public AdminLetterRequestDto? GetRequestById(int letterRequestId)
         {
-            return _letterRequestRepository.GetAdminRequestById(
-                letterRequestId);
+            return _letterRequestRepository.GetAdminRequestById(letterRequestId);
         }
 
 
-        public int RejectRequest(
-            int letterRequestId,
-            int rejectedByUserId,
-            string rejectionReason)
+        public int RejectRequest(int letterRequestId,int rejectedByUserId,string rejectionReason)
         {
-            // Step 1: Validate input.
+            // Validate input.
             if (letterRequestId <= 0 || rejectedByUserId <= 0)
                 return 0;
 
@@ -47,7 +43,7 @@ namespace Letter_Request_Management_System.Business
             if (rejectionReason.Length > 1000)
                 return 7;
 
-            // Step 2: Check whether the request exists.
+            // Check whether the request exists.
             var request =
                 _letterRequestRepository.GetAdminRequestById(
                     letterRequestId);
@@ -55,7 +51,7 @@ namespace Letter_Request_Management_System.Business
             if (request == null)
                 return 0;
 
-            // Step 3: Check whether the request is Pending.
+            // Check whether the request is Pending.
             if (!string.Equals(
                 request.Status,
                 "Pending",
@@ -64,7 +60,7 @@ namespace Letter_Request_Management_System.Business
                 return 2;
             }
 
-            // Step 4: Save rejection details.
+            // Save rejection details.
             return _letterRequestRepository.RejectRequest(
                 letterRequestId,
                 rejectedByUserId,
@@ -78,9 +74,7 @@ namespace Letter_Request_Management_System.Business
                 return 0;
 
             // Get the employee's request.
-            var request =
-                _letterRequestRepository.GetAdminRequestById(
-                    letterRequestId);
+            var request =_letterRequestRepository.GetAdminRequestById(letterRequestId);
 
             if (request == null)
                 return 0;
@@ -118,7 +112,7 @@ namespace Letter_Request_Management_System.Business
             DateTime approvedAt = DateTime.Now;
 
             string pdfReference =
-                _signedLetterPdfService.GenerateSignedPdf(
+                _letterPdfBusiness.GenerateSignedPdf(
                     request.LetterContent,
                     adminName,
                     approvedAt,

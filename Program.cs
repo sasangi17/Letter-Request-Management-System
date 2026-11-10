@@ -69,6 +69,7 @@ builder.Services.AddScoped<AdminSignatureRepository>();
 builder.Services.AddScoped<AuthBusiness>();
 builder.Services.AddScoped<AdminBusiness>();
 builder.Services.AddScoped<LetterRequestBusiness>();
+builder.Services.AddScoped<LetterPdfBusiness>();
 builder.Services.AddScoped<AdminSignatureBusiness>();
 
 
@@ -76,6 +77,9 @@ builder.Services.AddScoped<AdminSignatureBusiness>();
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<SignedLetterPdfService>();
 builder.Services.AddScoped<PreviewLetterPdfService>();
+
+
+//Letter Templates
 builder.Services.AddScoped<ServiceLetterTemplate>();
 builder.Services.AddScoped<EmploymentConfirmationLetterTemplate>();
 builder.Services.AddScoped<SalaryConfirmationLetterTemplate>();

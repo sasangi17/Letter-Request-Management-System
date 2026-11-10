@@ -1,7 +1,6 @@
 ﻿using System.Security.Claims;
 using Letter_Request_Management_System.Business;
 using Letter_Request_Management_System.Models.Dto;
-using Letter_Request_Management_System.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,14 +12,13 @@ namespace Letter_Request_Management_System.Controllers
     public class LetterRequestController : ControllerBase
     {
         private readonly LetterRequestBusiness _business;
-        private readonly SignedLetterPdfService _signedLetterPdfService;
+        
 
         public LetterRequestController(
-            LetterRequestBusiness business,
-            SignedLetterPdfService signedLetterPdfService)
+            LetterRequestBusiness business)
         {
             _business = business;
-            _signedLetterPdfService = signedLetterPdfService;
+            
         }
 
         private int GetLoggedInUserId()
@@ -85,107 +83,9 @@ namespace Letter_Request_Management_System.Controllers
             return Ok(_business.GetMyRequests(userId));
         }
 
-        // Preview a pending letter.
-        [HttpGet("preview")]
-        public IActionResult PreviewLetter(int id)
-        {
-            int userId = GetLoggedInUserId();
-
-            if (userId <= 0)
-                return Unauthorized();
-
-            if (id <= 0)
-                return BadRequest("Invalid letter request ID.");
-
-            var pendingLetter = _business.GetPendingLetterForPreview(id, userId);
-
-            if (pendingLetter == null)
-            {
-                return NotFound("The pending letter was not found or is not available for preview.");
-            }
-
-            return Ok(new
-            {
-                letterRequestId = pendingLetter.LetterRequestId,
-                letterTypeName = pendingLetter.LetterTypeName,
-                letterContent = pendingLetter.LetterContent,
-                status = pendingLetter.Status,
-                watermark = "NOT APPROVED"
-            });
-        }
-
-        // Download an approved letter with the saved signature snapshot.
-        [HttpGet("letterdownload")]
-        public IActionResult DownloadLetter(int id)
-        {
-            int userId = GetLoggedInUserId();
-
-            if (userId <= 0)
-                return Unauthorized();
-
-            if (id <= 0)
-                return BadRequest("Invalid letter request ID.");
-
-            var letter = _business.GetApprovedLetterForDownload(id, userId);
-
-            if (letter == null)
-            {
-                return NotFound("The letter was not found, is not approved, or has no saved signature.");
-            }
-
-            try
-            {
-                byte[] pdfBytes =
-                    _signedLetterPdfService.GenerateSignedPdfBytes(
-                        letter.LetterContent,
-                        letter.ApproverName,
-                        letter.ApprovedAt,
-                        letter.SignatureImage);
-
-                string fileName = BuildPdfFileName(
-                    letter.EmployeeName,
-                    letter.LetterTypeName,
-                    id);
-
-                return File(pdfBytes, "application/pdf", fileName);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex);
-
-                return StatusCode(500,
-                    "An error occurred while generating the approved letter PDF.");
-            }
-        }
-
-        // Builds a name like "Ariyan's Service Letter.pdf"
-        private static string BuildPdfFileName(
-            string employeeName,
-            string letterTypeName,
-            int fallbackId)
-        {
-            if (string.IsNullOrWhiteSpace(employeeName) ||
-                string.IsNullOrWhiteSpace(letterTypeName))
-            {
-                return $"Approved-Letter-{fallbackId}.pdf";
-            }
-
-            // Capitalise each word of the letter type: "service letter" -> "Service Letter"
-            string typeName = System.Globalization.CultureInfo.CurrentCulture
-                .TextInfo.ToTitleCase(letterTypeName.Trim().ToLowerInvariant());
-
-            string name = $"{employeeName.Trim()}'s {typeName}";
-
-            // Remove characters not allowed in file names
-            foreach (char c in Path.GetInvalidFileNameChars())
-                name = name.Replace(c.ToString(), string.Empty);
-
-            return $"{name}.pdf";
-        }
-
-        // PUT: /api/LetterRequest/cancel?id=17
+        // POST: /api/LetterRequest/cancel?id=req_id
         // Cancel the logged-in employee's pending request.
-        [HttpPut("cancel")]
+        [HttpPost("cancel")]
         public IActionResult CancelRequest([FromQuery] int id)
         {
             int userId = GetLoggedInUserId();

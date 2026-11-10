@@ -1,5 +1,4 @@
-﻿
-using QuestPDF.Fluent;
+﻿using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 
@@ -28,30 +27,15 @@ namespace Letter_Request_Management_System.Services
                         layers.PrimaryLayer().Column(column =>
                         {
                             column.Spacing(18);
-
-                            column.Item()
-                                .Text("EMPLOYEE LETTER")
-                                .FontSize(20)
-                                .Bold();
-
+                            column.Item().Text("EMPLOYEE LETTER").FontSize(20).Bold();
                             column.Item().Text(letterContent);
                         });
 
                         // Watermark
-                        layers.Layer()
-                            .AlignCenter()
-                            .AlignMiddle()
-                            .Rotate(-35)
-                            .Text("NOT APPROVED")
-                            .FontSize(48)
-                            .Bold()
-                            .FontColor(Colors.Grey.Lighten2);
+                        layers.Layer().AlignCenter().AlignMiddle().Rotate(-35).Text("NOT APPROVED").FontSize(48).Bold().FontColor(Colors.Grey.Lighten2);
                     });
 
-                    page.Footer()
-                        .AlignCenter()
-                        .Text("UNOFFICIAL PREVIEW - NOT APPROVED")
-                        .FontSize(9);
+                    page.Footer().AlignCenter().Text("UNOFFICIAL PREVIEW - NOT APPROVED").FontSize(9);
                 });
             }).GeneratePdf();
         }
