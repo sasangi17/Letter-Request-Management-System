@@ -12,12 +12,11 @@ import { HttpClient } from '@angular/common/http';
 import { Router, RouterModule } from '@angular/router';
 
 import { AuthService } from '../../services/auth.service';
-import {Header} from "../../employee/header/header";
+import { Header } from '../../employee/header/header';
 
 interface LetterType {
-  letterTypeId: number;
   letterTypeName: string;
-  description?: string;
+  description: string;
 }
 
 @Component({
@@ -29,23 +28,33 @@ interface LetterType {
 })
 export class EmployeeLetter implements OnInit {
 
-  private readonly letterTypeUrl =
-    'https://localhost:7103/api/LetterType';
-
   private readonly requestUrl =
     'https://localhost:7103/api/LetterRequest/createrequest';
 
+  employeeName = '';
+  employeeEmail = '';
+  employeeEmpNo = '';
+  employeeDepartment = '';
+  employeePosition = '';
 
-employeeName = '';
-employeeEmail = '';
-employeeEmpNo = '';
-employeeDepartment = '';
-employeePosition = '';  
-  letterTypes: LetterType[] = [];
+  // These letter types are defined in the backend.
+  letterTypes: LetterType[] = [
+    {
+      letterTypeName: 'Service Letter',
+      description: 'Request an official letter confirming your service.'
+    },
+    {
+      letterTypeName: 'Employment Confirmation Letter',
+      description: 'Request an official confirmation of your employment.'
+    },
+    {
+      letterTypeName: 'Salary Confirmation Letter',
+      description: 'Request an official letter confirming your salary.'
+    }
+  ];
 
-  selectedLetterTypeId: number | null = null;
+  selectedLetterTypeName: string | null = null;
 
-  isLoadingTypes = true;
   isSubmitting = false;
 
   errorMessage = '';
@@ -66,14 +75,6 @@ employeePosition = '';
 
     const user = this.authService.getLoggedInUser();
 
-if (user) {
-  this.employeeName = user.fullName || '';
-  this.employeeEmail = user.email || '';
-  this.employeeEmpNo = user.empNo || '';
-  this.employeeDepartment = user.department || '';
-  this.employeePosition = user.position || '';
-}
-
     if (!user || !this.authService.isLoggedIn()) {
       this.router.navigate(['/login']);
       return;
@@ -90,43 +91,17 @@ if (user) {
       return;
     }
 
-    this.loadLetterTypes();
-  }
-
-  // Load available letter types.
-  loadLetterTypes(): void {
-    this.isLoadingTypes = true;
-    this.errorMessage = '';
-
-    this.http.get<LetterType[]>(this.letterTypeUrl).subscribe({
-      next: (response) => {
-        this.letterTypes = Array.isArray(response)
-          ? response
-          : [];
-
-        this.isLoadingTypes = false;
-        this.cdr.detectChanges();
-      },
-
-      error: (error) => {
-        console.error('Failed to load letter types:', error);
-
-        this.errorMessage =
-          error.status === 401
-            ? 'Your session has expired. Please log in again.'
-            : 'Unable to load letter types. Please check the backend connection.';
-
-        this.isLoadingTypes = false;
-        this.cdr.detectChanges();
-      }
-    });
+    this.employeeName = user.fullName || '';
+    this.employeeEmail = user.email || '';
+    this.employeeEmpNo = user.empNo || '';
+    this.employeeDepartment = user.department || '';
+    this.employeePosition = user.position || '';
   }
 
   // Get the selected letter type.
   get selectedLetterType(): LetterType | undefined {
     return this.letterTypes.find(
-      type =>
-        type.letterTypeId === Number(this.selectedLetterTypeId)
+      type => type.letterTypeName === this.selectedLetterTypeName
     );
   }
 
@@ -135,7 +110,7 @@ if (user) {
     this.errorMessage = '';
     this.successMessage = '';
 
-    if (!this.selectedLetterTypeId) {
+    if (!this.selectedLetterTypeName) {
       this.errorMessage = 'Please select a letter type.';
       return;
     }
@@ -143,7 +118,7 @@ if (user) {
     this.isSubmitting = true;
 
     const requestData = {
-      letterTypeId: Number(this.selectedLetterTypeId)
+      letterTypeName: this.selectedLetterTypeName
     };
 
     this.http.post(
@@ -156,7 +131,7 @@ if (user) {
         this.successMessage =
           'Your letter request has been submitted successfully.';
 
-        this.selectedLetterTypeId = null;
+        this.selectedLetterTypeName = null;
         this.isSubmitting = false;
         this.cdr.detectChanges();
       },
@@ -166,6 +141,7 @@ if (user) {
 
         if (error.status === 400) {
           this.errorMessage =
+            error.error?.message ||
             'The request could not be submitted. Please check the selected letter type.';
         } else if (error.status === 401) {
           this.errorMessage =

@@ -1,4 +1,6 @@
+
 <app-header></app-header>
+
 <div class="page-container">
 
   <header class="page-header">
@@ -6,55 +8,51 @@
       <h1>Request a Letter</h1>
       <p>Select the letter you need and submit your request.</p>
     </div>
-
   </header>
 
   <section class="request-card">
 
     <h2>New Letter Request</h2>
-     
-<section class="employee-details-card">
 
-  <h3>Employee Details</h3>
+    <section class="employee-details-card">
 
-  <div class="details-grid">
+      <h3>Employee Details</h3>
 
-    <div class="detail-item">
-      <label>Full Name</label>
-      <p>{{ employeeName }}</p>
-    </div>
+      <div class="details-grid">
 
-    <div class="detail-item">
-      <label>Employee Number</label>
-      <p>{{ employeeEmpNo }}</p>
-    </div>
+        <div class="detail-item">
+          <label>Full Name</label>
+          <p>{{ employeeName }}</p>
+        </div>
 
-    <div class="detail-item">
-      <label>Email Address</label>
-      <p>{{ employeeEmail }}</p>
-    </div>
+        <div class="detail-item">
+          <label>Employee Number</label>
+          <p>{{ employeeEmpNo }}</p>
+        </div>
 
-    <div class="detail-item">
-      <label>Department</label>
-      <p>{{ employeeDepartment }}</p>
-    </div>
+        <div class="detail-item">
+          <label>Email Address</label>
+          <p>{{ employeeEmail }}</p>
+        </div>
 
-    <div class="detail-item">
-      <label>Position</label>
-      <p>{{ employeePosition }}</p>
-    </div>
+        <div class="detail-item">
+          <label>Department</label>
+          <p>{{ employeeDepartment }}</p>
+        </div>
 
-  </div>
+        <div class="detail-item">
+          <label>Position</label>
+          <p>{{ employeePosition }}</p>
+        </div>
+
+      </div>
+
+    </section>
 
     <p class="form-description">
       Select a letter type from the list below.
       Your request will be sent to the administrator for approval.
     </p>
-
-    <!-- Loading -->
-    <div class="info-message" *ngIf="isLoadingTypes">
-      Loading available letter types...
-    </div>
 
     <!-- Error -->
     <div
@@ -72,11 +70,10 @@
       {{ successMessage }}
     </div>
 
-    <form
-      *ngIf="!isLoadingTypes"
-      (ngSubmit)="submitRequest()">
+    <form (ngSubmit)="submitRequest()">
 
       <div class="form-group">
+
         <label for="letterType">
           Select Letter Type <span>*</span>
         </label>
@@ -84,7 +81,7 @@
         <select
           id="letterType"
           name="letterType"
-          [(ngModel)]="selectedLetterTypeId"
+          [(ngModel)]="selectedLetterTypeName"
           required>
 
           <option [ngValue]="null" disabled>
@@ -93,13 +90,12 @@
 
           <option
             *ngFor="let type of letterTypes"
-            [ngValue]="type.letterTypeId">
-
+            [ngValue]="type.letterTypeName">
             {{ type.letterTypeName }}
-
           </option>
 
         </select>
+
       </div>
 
       <!-- Selected letter details -->
@@ -109,21 +105,7 @@
 
         <h3>{{ selectedLetterType.letterTypeName }}</h3>
 
-        <p>
-          {{
-            selectedLetterType.description ||
-            'No description is available for this letter type.'
-          }}
-        </p>
-
-      </div>
-
-      <!-- No letter types -->
-      <div
-        class="info-message"
-        *ngIf="letterTypes.length === 0 && !errorMessage">
-
-        No letter types are currently available.
+        <p>{{ selectedLetterType.description }}</p>
 
       </div>
 
@@ -134,34 +116,20 @@
           type="button"
           class="cancel-button"
           (click)="goToDashboard()">
-
           Cancel
-
         </button>
 
         <button
           type="submit"
           class="submit-button"
-          [disabled]="isSubmitting || letterTypes.length === 0">
-
+          [disabled]="isSubmitting">
           {{ isSubmitting ? 'Submitting...' : 'Submit Request' }}
-
         </button>
 
       </div>
 
     </form>
 
-    <button
-      *ngIf="errorMessage && !isLoadingTypes && letterTypes.length === 0"
-      type="button"
-      class="retry-button"
-      (click)="loadLetterTypes()">
-
-      Try Again
-
-    </button>
-   </section>
   </section>
 
 </div>

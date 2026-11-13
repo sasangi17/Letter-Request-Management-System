@@ -15,7 +15,6 @@ import { Header } from '../../employee/header/header';
 
 interface LetterRequest {
   letterRequestId: number;
-  letterTypeId: number;
   letterTypeName: string;
   requestDate: string;
   status: string;
@@ -24,10 +23,9 @@ interface LetterRequest {
 
 interface LetterPreview {
   letterRequestId: number;
-  letterTypeName: string;
   letterContent: string;
   status: string;
-  watermark: string;
+  message: string;
 }
 
 @Component({
@@ -47,19 +45,27 @@ export class MyRequests implements OnInit {
     'https://localhost:7103/api/LetterRequest/myrequest';
 
   private readonly previewUrl =
-    'https://localhost:7103/api/LetterRequest/preview';
+    'https://localhost:7103/api/LetterPdf/preview';
 
   private readonly downloadUrl =
-    'https://localhost:7103/api/LetterRequest/letterdownload';
+    'https://localhost:7103/api/LetterPdf/download';
+
+  private readonly cancelUrl =
+    'https://localhost:7103/api/LetterRequest/cancel';
 
   requests: LetterRequest[] = [];
 
   isLoading = true;
   errorMessage = '';
+  successMessage = '';
+
   downloadingRequestId: number | null = null;
+  cancellingRequestId: number | null = null;
+
   showPreview = false;
   isPreviewLoading = false;
   previewLetter: LetterPreview | null = null;
+  previewLetterTypeName = '';
 
   constructor(
     private http: HttpClient,
@@ -88,22 +94,27 @@ export class MyRequests implements OnInit {
         this.authService.logout();
         this.router.navigate(['/login']);
       }
+
       return;
     }
 
     this.loadRequests();
   }
 
+  // Load logged-in employee's requests.
   loadRequests(): void {
     this.isLoading = true;
     this.errorMessage = '';
+    this.successMessage = '';
 
     this.http.get<LetterRequest[]>(this.requestUrl).subscribe({
       next: response => {
         this.requests = Array.isArray(response) ? response : [];
+
         this.isLoading = false;
         this.cdr.detectChanges();
       },
+
       error: error => {
         console.error('Failed to load requests:', error);
 
@@ -117,7 +128,7 @@ export class MyRequests implements OnInit {
     });
   }
 
-  // Display pending letter inside an Angular modal
+  // Display a pending letter preview.
   viewLetter(request: LetterRequest): void {
     if (request.status?.toLowerCase() !== 'pending') {
       return;
@@ -126,6 +137,7 @@ export class MyRequests implements OnInit {
     this.showPreview = true;
     this.isPreviewLoading = true;
     this.previewLetter = null;
+    this.previewLetterTypeName = request.letterTypeName;
     this.errorMessage = '';
 
     this.http.get<LetterPreview>(
@@ -134,13 +146,16 @@ export class MyRequests implements OnInit {
       next: response => {
         if (response.status?.toLowerCase() !== 'pending') {
           this.closePreview();
+          this.loadRequests();
           return;
         }
 
         this.previewLetter = response;
         this.isPreviewLoading = false;
+
         this.cdr.detectChanges();
       },
+
       error: error => {
         console.error('Preview failed:', error);
 
@@ -159,10 +174,11 @@ export class MyRequests implements OnInit {
   closePreview(): void {
     this.showPreview = false;
     this.previewLetter = null;
+    this.previewLetterTypeName = '';
     this.isPreviewLoading = false;
   }
 
-  // Only approved letters can be downloaded
+  // Download only approved and signed letters.
   downloadLetter(request: LetterRequest): void {
     if (request.status?.toLowerCase() !== 'approved') {
       return;
@@ -177,6 +193,7 @@ export class MyRequests implements OnInit {
     ).subscribe({
       next: file => {
         if (!isPlatformBrowser(this.platformId)) {
+          this.downloadingRequestId = null;
           return;
         }
 
@@ -195,6 +212,7 @@ export class MyRequests implements OnInit {
         this.downloadingRequestId = null;
         this.cdr.detectChanges();
       },
+
       error: error => {
         console.error('Failed to download letter:', error);
 
@@ -203,6 +221,60 @@ export class MyRequests implements OnInit {
           : 'Unable to download the letter. Please try again.';
 
         this.downloadingRequestId = null;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  // Cancel only pending requests.
+  cancelRequest(request: LetterRequest): void {
+    if (request.status?.toLowerCase() !== 'pending') {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Are you sure you want to cancel your ${request.letterTypeName} request?`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    this.cancellingRequestId = request.letterRequestId;
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    this.http.post(
+      `${this.cancelUrl}?id=${request.letterRequestId}`,
+      null
+    ).subscribe({
+      next: response => {
+        console.log('Request cancelled:', response);
+
+        this.successMessage =
+          'Your letter request has been cancelled successfully.';
+
+        this.cancellingRequestId = null;
+
+        this.loadRequests();
+      },
+
+      error: error => {
+        console.error('Failed to cancel request:', error);
+
+        if (error.status === 401) {
+          this.errorMessage =
+            'Your session has expired. Please log in again.';
+        } else if (error.status === 404) {
+          this.errorMessage =
+            'The request was not found or is no longer pending. Refresh the page and try again.';
+        } else {
+          this.errorMessage =
+            error.error?.message ||
+            'Unable to cancel the request. Please try again.';
+        }
+
+        this.cancellingRequestId = null;
         this.cdr.detectChanges();
       }
     });

@@ -2,29 +2,63 @@
 
 <main class="page-container">
 
+  <header class="page-heading">
+    <div>
+      <h1>My Requests</h1>
+      <p>View and manage your submitted letter requests.</p>
+    </div>
+  </header>
+
+  <!-- Success -->
+  <div
+    class="success-message"
+    *ngIf="successMessage"
+    role="status">
+    {{ successMessage }}
+  </div>
+
   <!-- Loading -->
   <div class="message-card" *ngIf="isLoading">
     Loading your requests...
   </div>
 
   <!-- Error -->
-  <div class="error-message" *ngIf="!isLoading && errorMessage">
+  <div
+    class="error-message"
+    *ngIf="!isLoading && errorMessage"
+    role="alert">
     {{ errorMessage }}
+
+    <button
+      type="button"
+      class="retry-btn"
+      (click)="loadRequests()">
+      Try Again
+    </button>
   </div>
 
   <!-- No requests -->
-  <div class="empty-card"
-       *ngIf="!isLoading && !errorMessage && requests.length === 0">
+  <div
+    class="empty-card"
+    *ngIf="!isLoading && !errorMessage && requests.length === 0">
 
     <h3>No Requests Found</h3>
+
     <p>You haven't submitted any letter requests yet.</p>
 
+    <button
+      type="button"
+      class="new-request-btn"
+      (click)="goToRequestLetter()">
+      Create Your First Request
+    </button>
 
   </div>
 
   <!-- Requests table -->
-  <section class="requests-card"
-           *ngIf="!isLoading && requests.length > 0">
+  <section
+    class="requests-card"
+    *ngIf="!isLoading && requests.length > 0">
 
     <div class="table-heading">
       <h2>Submitted Requests</h2>
@@ -36,7 +70,6 @@
       <table>
         <thead>
           <tr>
-            
             <th>Letter Type</th>
             <th>Request Date</th>
             <th>Status</th>
@@ -47,43 +80,87 @@
         <tbody>
           <tr *ngFor="let request of requests">
 
-            
-
             <td>{{ request.letterTypeName }}</td>
 
-            <td>{{ request.requestDate | date:'dd MMM yyyy' }}</td>
+            <td>
+              {{ request.requestDate | date:'dd MMM yyyy' }}
+            </td>
 
             <td>
-              <span class="status"
-                    [ngClass]="{
-                      'pending': request.status.toLowerCase() === 'pending',
-                      'approved': request.status.toLowerCase() === 'approved'
-                    }">
+              <span
+                class="status"
+                [ngClass]="{
+                  'pending': request.status.toLowerCase() === 'pending',
+                  'approved': request.status.toLowerCase() === 'approved',
+                  'rejected': request.status.toLowerCase() === 'rejected',
+                  'cancelled': request.status.toLowerCase() === 'cancelled'
+                }">
                 {{ request.status }}
               </span>
             </td>
 
-           <td>
-  <ng-container [ngSwitch]="request.status.toLowerCase()">
+            <td>
+              <ng-container [ngSwitch]="request.status.toLowerCase()">
 
-    <button
-  *ngSwitchCase="'pending'"
-  type="button"
-  class="view-letter-btn"
-  (click)="viewLetter(request)">
-  View Letter
-</button>
+                <!-- Pending actions -->
+                <div
+                  class="action-buttons"
+                  *ngSwitchCase="'pending'">
 
-<button
-  *ngSwitchCase="'approved'"
-  type="button"
-  class="download-btn"
-  (click)="downloadLetter(request)">
-  Download Signed Letter
-</button>
+                  <button
+                    type="button"
+                    class="view-letter-btn"
+                    (click)="viewLetter(request)">
+                    View Letter
+                  </button>
 
-  </ng-container>
-</td>
+                  <button
+                    type="button"
+                    class="cancel-request-btn"
+                    [disabled]="cancellingRequestId === request.letterRequestId"
+                    (click)="cancelRequest(request)">
+
+                    {{
+                      cancellingRequestId === request.letterRequestId
+                        ? 'Cancelling...'
+                        : 'Cancel Request'
+                    }}
+
+                  </button>
+
+                </div>
+
+                <!-- Approved action -->
+                <button
+                  *ngSwitchCase="'approved'"
+                  type="button"
+                  class="download-btn"
+                  [disabled]="downloadingRequestId === request.letterRequestId"
+                  (click)="downloadLetter(request)">
+
+                  {{
+                    downloadingRequestId === request.letterRequestId
+                      ? 'Downloading...'
+                      : 'Download Signed Letter'
+                  }}
+
+                </button>
+
+                <!-- Rejected or cancelled -->
+                <span
+                  *ngSwitchCase="'rejected'"
+                  class="action-info">
+                  Request rejected
+                </span>
+
+                <span
+                  *ngSwitchCase="'cancelled'"
+                  class="action-info">
+                  Request cancelled
+                </span>
+
+              </ng-container>
+            </td>
 
           </tr>
         </tbody>
@@ -121,7 +198,9 @@
       Loading letter preview...
     </div>
 
-    <div class="letter-paper" *ngIf="!isPreviewLoading && previewLetter">
+    <div
+      class="letter-paper"
+      *ngIf="!isPreviewLoading && previewLetter">
 
       <div class="watermark">NOT APPROVED</div>
 
@@ -129,7 +208,7 @@
         <h2>EMPLOYEE LETTER</h2>
 
         <p class="letter-type">
-          {{ previewLetter.letterTypeName }}
+          {{ previewLetterTypeName }}
         </p>
 
         <div class="letter-body">

@@ -1,0 +1,274 @@
+<app-admin-header></app-admin-header>
+<main class="dashboard-container">
+
+  <!-- Page heading -->
+  <section class="welcome-section">
+
+    <div>
+      <h1>Welcome, {{ adminName }}</h1>
+      <p>
+        Manage employee letter requests and monitor their progress.
+      </p>
+    </div>
+
+    <button
+      class="refresh-btn"
+      type="button"
+      (click)="refreshDashboard()"
+      [disabled]="isLoading">
+
+      {{ isLoading ? 'Loading...' : 'Refresh Requests' }}
+
+    </button>
+
+  </section>
+
+  <!-- Summary cards -->
+  <section class="summary-grid">
+
+    <div class="summary-card total">
+      <div class="card-heading">
+        <span>Total Requests</span>
+        <span class="card-icon">▤</span>
+      </div>
+      <h2>{{ totalRequests }}</h2>
+      <p>All employee requests</p>
+    </div>
+
+    <div class="summary-card pending">
+      <div class="card-heading">
+        <span>Pending Requests</span>
+        <span class="card-icon">◷</span>
+      </div>
+      <h2>{{ pendingRequests }}</h2>
+      <p>Waiting for review</p>
+    </div>
+
+    <div class="summary-card approved">
+      <div class="card-heading">
+        <span>Approved Requests</span>
+        <span class="card-icon">✓</span>
+      </div>
+      <h2>{{ approvedRequests }}</h2>
+      <p>Successfully approved</p>
+    </div>
+
+    <div class="summary-card rejected">
+      <div class="card-heading">
+        <span>Rejected Requests</span>
+        <span class="card-icon">×</span>
+      </div>
+      <h2>{{ rejectedRequests }}</h2>
+      <p>Requests not approved</p>
+    </div>
+
+  </section>
+
+  <!-- Requests section -->
+  <section class="requests-section">
+
+    <div class="section-heading">
+      <div>
+        <h2>Employee Letter Requests</h2>
+        <p>Review and manage submitted letter requests.</p>
+      </div>
+    </div>
+
+    <!-- Search and filter -->
+    <div class="table-controls">
+
+      <input
+        type="text"
+        placeholder="Search employee, email or letter type..."
+        [(ngModel)]="searchText"
+        aria-label="Search requests">
+
+      <select
+        [(ngModel)]="selectedFilter"
+        aria-label="Filter requests by status">
+
+        <option value="All">All Requests</option>
+        <option value="Pending">Pending</option>
+        <option value="Approved">Approved</option>
+        <option value="Rejected">Rejected</option>
+        <option value="Cancelled">Cancelled</option>
+
+      </select>
+
+    </div>
+
+    <!-- Loading -->
+    <div class="message loading-message" *ngIf="isLoading">
+      Loading employee requests...
+    </div>
+
+    <!-- Error -->
+    <div class="message error-message" *ngIf="errorMessage">
+      <p>{{ errorMessage }}</p>
+      <button type="button" (click)="refreshDashboard()">
+        Try Again
+      </button>
+    </div>
+
+    <!-- Requests table -->
+    <div class="table-wrapper" *ngIf="!isLoading && !errorMessage">
+
+      <table *ngIf="filteredRequests.length > 0; else noRequests">
+
+        <thead>
+          <tr>
+            <th>Request ID</th>
+            <th>Employee</th>
+            <th>Letter Type</th>
+            <th>Request Date</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+
+        <tbody>
+
+          <tr *ngFor="let request of filteredRequests">
+
+            <td>#{{ request.letterRequestId }}</td>
+
+            <td>
+              <div class="employee-cell">
+                <strong>{{ request.employeeName }}</strong>
+                <span>{{ request.empNo }}</span>
+              </div>
+            </td>
+
+            <td>{{ request.letterTypeName }}</td>
+
+            <td>
+              {{ request.requestDate | date:'dd MMM yyyy' }}
+            </td>
+
+            <td>
+              <span
+                class="status-badge"
+                [ngClass]="getStatusClass(request.status)">
+                {{ request.status }}
+              </span>
+            </td>
+
+            <td>
+              <button
+                type="button"
+                class="view-btn"
+                (click)="viewRequest(request)">
+                View Details
+              </button>
+            </td>
+
+          </tr>
+
+        </tbody>
+
+      </table>
+
+      <ng-template #noRequests>
+        <div class="empty-state">
+          <h3>No requests found</h3>
+          <p>
+            There are no requests matching your search or selected filter.
+          </p>
+        </div>
+      </ng-template>
+
+    </div>
+
+  </section>
+
+</main>
+
+<!-- Request details modal -->
+<div
+  class="modal-overlay"
+  *ngIf="selectedRequest"
+  (click)="closeDetails()">
+
+  <section
+    class="details-modal"
+    (click)="$event.stopPropagation()">
+
+    <div class="modal-heading">
+
+      <div>
+        <h2>Request Details</h2>
+        <p>
+          Request #{{ selectedRequest.letterRequestId }}
+        </p>
+      </div>
+
+      <button
+        type="button"
+        class="close-btn"
+        (click)="closeDetails()">
+        ×
+      </button>
+
+    </div>
+
+    <div class="details-grid">
+
+      <div class="detail-item">
+        <label>Employee Name</label>
+        <p>{{ selectedRequest.employeeName }}</p>
+      </div>
+
+      <div class="detail-item">
+        <label>Employee Number</label>
+        <p>{{ selectedRequest.empNo }}</p>
+      </div>
+
+      <div class="detail-item">
+        <label>Email Address</label>
+        <p>{{ selectedRequest.email }}</p>
+      </div>
+
+      <div class="detail-item">
+        <label>Department</label>
+        <p>{{ selectedRequest.department }}</p>
+      </div>
+
+      <div class="detail-item">
+        <label>Letter Type</label>
+        <p>{{ selectedRequest.letterTypeName }}</p>
+      </div>
+
+      <div class="detail-item">
+        <label>Request Date</label>
+        <p>
+          {{ selectedRequest.requestDate | date:'dd MMM yyyy, h:mm a' }}
+        </p>
+      </div>
+
+      <div class="detail-item">
+        <label>Status</label>
+        <p>{{ selectedRequest.status }}</p>
+      </div>
+
+    </div>
+
+    <div class="letter-content">
+
+      <h3>Letter Content</h3>
+
+      <p>{{ selectedRequest.letterContent }}</p>
+
+    </div>
+
+    <div class="modal-actions">
+      <button
+        type="button"
+        class="close-modal-btn"
+        (click)="closeDetails()">
+        Close
+      </button>
+    </div>
+
+  </section>
+
+</div>

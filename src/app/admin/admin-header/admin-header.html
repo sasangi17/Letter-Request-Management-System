@@ -1,0 +1,24 @@
+
+<header class="admin-header">
+
+  <div class="brand">
+    <h2>Letter Portal</h2>
+    <span>Administration Workspace</span>
+  </div>
+
+  <nav class="nav-links">
+    <a routerLink="/admin" routerLinkActive="active"
+       [routerLinkActiveOptions]="{ exact: true }">
+      Dashboard
+    </a>
+
+    <a routerLink="/admin/requests" routerLinkActive="active">
+      Manage Letter Requests
+    </a>
+  </nav>
+
+  <button class="logout-btn" (click)="logout()">
+    Logout
+  </button>
+
+</header>
