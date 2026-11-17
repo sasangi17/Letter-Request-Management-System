@@ -23,11 +23,7 @@ EMPLOYMENT CONFIRMATION LETTER
 
 Date: {DateTimeUtility.FormatLetterDate(DateTime.Now)}
 
-This letter confirms that {employee.FullName}, bearing Employee Number {employee.EmpNo}, is currently employed at our organization.
-
-The employee is working in the {employee.Department} department as a {employee.Position}.
-
-The employee's joining date is {(employee.JoinDate.HasValue ? DateTimeUtility.FormatLetterDate(employee.JoinDate.Value) : "N/A")}.
+This letter confirms that {employee.FullName}, bearing Employee Number {employee.EmpNo}, is currently employed at our organization.The employee is working in the {employee.Department} department as a {employee.Position}.The employee's joining date is {(employee.JoinDate.HasValue ? DateTimeUtility.FormatLetterDate(employee.JoinDate.Value) : "N/A")}.
 
 This confirmation letter is issued upon the employee's request for official purposes.";
         }
@@ -82,7 +78,7 @@ This confirmation letter is issued upon the employee's request for official purp
                             "This confirmation letter is issued upon the employee's request " +
                             "for official purposes.");
 
-                        AddSignatureSection(column, adminSignature, adminName, approvedAt);
+                        SignatureSectionUtility.AddSignatureSection(column, adminSignature, adminName, approvedAt);
                     });
 
                     page.Footer()
@@ -93,31 +89,6 @@ This confirmation letter is issued upon the employee's request for official purp
             }).GeneratePdf();
         }
 
-        private static void AddSignatureSection(
-            ColumnDescriptor column,
-            AdminSignatureMl adminSignature,
-            string adminName,
-            DateTime approvedAt)
-        {
-            column.Item().PaddingTop(30)
-                .Text("Authorized Signature");
-
-            column.Item()
-                .Width(180)
-                .Height(80)
-                .Image(adminSignature.SignatureImage)
-                .FitArea();
-
-            column.Item()
-                .Text(adminName)
-                .Bold();
-
-            column.Item()
-                .Text($"Approval Date: {approvedAt:dd MMMM yyyy}");
-
-            column.Item()
-                .Text("Human Resources Department");
-        }
 
         private static void ValidateInputs(
             UserMl employee,
