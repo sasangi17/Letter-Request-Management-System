@@ -16,26 +16,33 @@ namespace Letter_Request_Management_System.Data.Repository
 
         // GET all letter requests (Admin)
 
+
         public List<AdminLetterRequestDto> GetAllRequests()
         {
             const string query = @"
-                SELECT
-                    lr.LetterRequestId,
-                    u.UserId,
-                    u.EmpNo,
-                    u.FullName AS EmployeeName,
-                    u.Email,
-                    u.Department,
-                    lr.LetterTypeName,
-                    lr.RequestDate,
-                    lr.Status,
-                    lr.LetterContentSnapshot AS LetterContent
-                FROM dbo.LetterRequests AS lr
-                INNER JOIN dbo.Users AS u
-                    ON lr.UserId = u.UserId
-                ORDER BY lr.RequestDate DESC;";
+        SELECT
+            lr.LetterRequestId,
+            u.UserId,
+            u.EmpNo,
+            u.FullName AS EmployeeName,
+            u.Email,
+            u.Department,
+            lr.LetterTypeName,
+            lr.RequestDate,
+            lr.Status,
+            lr.LetterContentSnapshot AS LetterContent,
+            lr.CopyType,
+            lr.IsPrinted,
+            lr.PrintedByUserId,
+            lr.PrintedAt
+        FROM dbo.LetterRequests AS lr
+        INNER JOIN dbo.Users AS u
+            ON lr.UserId = u.UserId
+        ORDER BY lr.RequestDate DESC;";
 
-            DataTable table = _baseSqlDL.ExecuteReader(query,new List<DbParametersSql.QueryParameters>());
+            DataTable table = _baseSqlDL.ExecuteReader(
+                query,
+                new List<DbParametersSql.QueryParameters>());
 
             var requests = new List<AdminLetterRequestDto>();
 
@@ -52,12 +59,23 @@ namespace Letter_Request_Management_System.Data.Repository
                     LetterTypeName = row["LetterTypeName"]?.ToString() ?? string.Empty,
                     RequestDate = Convert.ToDateTime(row["RequestDate"]),
                     Status = row["Status"]?.ToString() ?? string.Empty,
-                    LetterContent = row["LetterContent"]?.ToString() ?? string.Empty
+                    LetterContent = row["LetterContent"]?.ToString() ?? string.Empty,
+
+                    CopyType = row["CopyType"]?.ToString() ?? "Soft Copy",
+                    IsPrinted = row["IsPrinted"] != DBNull.Value &&
+                                Convert.ToBoolean(row["IsPrinted"]),
+                    PrintedByUserId = row["PrintedByUserId"] == DBNull.Value
+                        ? null
+                        : Convert.ToInt32(row["PrintedByUserId"]),
+                    PrintedAt = row["PrintedAt"] == DBNull.Value
+                        ? null
+                        : Convert.ToDateTime(row["PrintedAt"])
                 });
             }
 
             return requests;
         }
+
 
 
         // GET employee details for letter generation (Employee)
@@ -106,48 +124,56 @@ namespace Letter_Request_Management_System.Data.Repository
 
         // Create a new letter request (Employee)
 
+
         public int CreateRequest(
             int userId,
             string letterTypeName,
-            string letterContent)
+            string letterContent,
+            string copyType = "Soft Copy")
         {
+            if (copyType != "Soft Copy" && copyType != "Hard Copy")
+                throw new ArgumentException("Invalid copy type.");
+
             const string query = @"
-                SET XACT_ABORT ON;
+        SET XACT_ABORT ON;
 
-                BEGIN TRY
-                    BEGIN TRANSACTION;
+        BEGIN TRY
+            BEGIN TRANSACTION;
 
-                    INSERT INTO dbo.LetterRequests
-                    (
-                        UserId,
-                        LetterTypeName,
-                        Status,
-                        LetterContentSnapshot
-                    )
-                    OUTPUT INSERTED.LetterRequestId
-                    VALUES
-                    (
-                        @UserId,
-                        @LetterTypeName,
-                        'Pending',
-                        @LetterContentSnapshot
-                    );
+            INSERT INTO dbo.LetterRequests
+            (
+                UserId,
+                LetterTypeName,
+                Status,
+                LetterContentSnapshot,
+                CopyType
+            )
+            OUTPUT INSERTED.LetterRequestId
+            VALUES
+            (
+                @UserId,
+                @LetterTypeName,
+                'Pending',
+                @LetterContentSnapshot,
+                @CopyType
+            );
 
-                    COMMIT TRANSACTION;
-                END TRY
-                BEGIN CATCH
-                    IF @@TRANCOUNT > 0
-                        ROLLBACK TRANSACTION;
+            COMMIT TRANSACTION;
+        END TRY
+        BEGIN CATCH
+            IF @@TRANCOUNT > 0
+                ROLLBACK TRANSACTION;
 
-                    THROW;
-                END CATCH;";
+            THROW;
+        END CATCH;";
 
             var parameters = new List<DbParametersSql.QueryParameters>
-            {
-                DbParametersSql.SetValues("@UserId", SqlDbType.Int, userId),
-                DbParametersSql.SetValues("@LetterTypeName", SqlDbType.NVarChar, letterTypeName),
-                DbParametersSql.SetValues("@LetterContentSnapshot", SqlDbType.NVarChar, letterContent)
-            };
+    {
+        DbParametersSql.SetValues("@UserId", SqlDbType.Int, userId),
+        DbParametersSql.SetValues("@LetterTypeName", SqlDbType.NVarChar, letterTypeName),
+        DbParametersSql.SetValues("@LetterContentSnapshot", SqlDbType.NVarChar, letterContent),
+        DbParametersSql.SetValues("@CopyType", SqlDbType.NVarChar, copyType)
+    };
 
             DataTable table = _baseSqlDL.ExecuteReader(query, parameters);
 
@@ -158,6 +184,7 @@ namespace Letter_Request_Management_System.Data.Repository
         }
 
 
+
         // Get letter request by ID (Employee)
 
         public LetterRequestResponseDto? GetRequestById(
@@ -166,14 +193,18 @@ namespace Letter_Request_Management_System.Data.Repository
         {
             const string query = @"
                 SELECT
-                    lr.LetterRequestId,
-                    lr.LetterTypeName,
-                    lr.RequestDate,
-                    lr.Status,
-                    lr.LetterContentSnapshot AS LetterContent
-                FROM dbo.LetterRequests AS lr
-                WHERE lr.LetterRequestId = @LetterRequestId
-                  AND lr.UserId = @UserId;";
+    lr.LetterRequestId,
+    lr.LetterTypeName,
+    lr.RequestDate,
+    lr.Status,
+    lr.LetterContentSnapshot AS LetterContent,
+    lr.CopyType,
+    lr.IsPrinted,
+    lr.PrintedByUserId,
+    lr.PrintedAt
+FROM dbo.LetterRequests AS lr
+WHERE lr.LetterRequestId = @LetterRequestId
+  AND lr.UserId = @UserId;";
 
             var parameters = new List<DbParametersSql.QueryParameters>
             {
@@ -194,7 +225,19 @@ namespace Letter_Request_Management_System.Data.Repository
                 LetterTypeName = row["LetterTypeName"]?.ToString() ?? string.Empty,
                 RequestDate = Convert.ToDateTime(row["RequestDate"]),
                 Status = row["Status"]?.ToString() ?? string.Empty,
-                LetterContent = row["LetterContent"]?.ToString() ?? string.Empty
+                LetterContent = row["LetterContent"]?.ToString() ?? string.Empty,
+                CopyType = row["CopyType"]?.ToString() ?? "Soft Copy",
+
+                IsPrinted = row["IsPrinted"] != DBNull.Value &&
+            Convert.ToBoolean(row["IsPrinted"]),
+
+                PrintedByUserId = row["PrintedByUserId"] == DBNull.Value
+    ? null
+    : Convert.ToInt32(row["PrintedByUserId"]),
+
+                PrintedAt = row["PrintedAt"] == DBNull.Value
+    ? null
+    : Convert.ToDateTime(row["PrintedAt"])
             };
         }
 
@@ -205,14 +248,18 @@ namespace Letter_Request_Management_System.Data.Repository
         {
             const string query = @"
                 SELECT
-                    lr.LetterRequestId,
-                    lr.LetterTypeName,
-                    lr.RequestDate,
-                    lr.Status,
-                    lr.LetterContentSnapshot AS LetterContent
-                FROM dbo.LetterRequests AS lr
-                WHERE lr.UserId = @UserId
-                ORDER BY lr.RequestDate DESC;";
+    lr.LetterRequestId,
+    lr.LetterTypeName,
+    lr.RequestDate,
+    lr.Status,
+    lr.LetterContentSnapshot AS LetterContent,
+    lr.CopyType,
+    lr.IsPrinted,
+    lr.PrintedByUserId,
+    lr.PrintedAt
+FROM dbo.LetterRequests AS lr
+WHERE lr.UserId = @UserId
+ORDER BY lr.RequestDate DESC;";
 
             var parameters = new List<DbParametersSql.QueryParameters>
             {
@@ -231,7 +278,17 @@ namespace Letter_Request_Management_System.Data.Repository
                     LetterTypeName = row["LetterTypeName"]?.ToString() ?? string.Empty,
                     RequestDate = Convert.ToDateTime(row["RequestDate"]),
                     Status = row["Status"]?.ToString() ?? string.Empty,
-                    LetterContent = row["LetterContent"]?.ToString() ?? string.Empty
+                    LetterContent = row["LetterContent"]?.ToString() ?? string.Empty,
+
+                    CopyType = row["CopyType"]?.ToString() ?? "Soft Copy",
+                    IsPrinted = row["IsPrinted"] != DBNull.Value &&
+                Convert.ToBoolean(row["IsPrinted"]),
+                    PrintedByUserId = row["PrintedByUserId"] == DBNull.Value
+        ? null
+        : Convert.ToInt32(row["PrintedByUserId"]),
+                    PrintedAt = row["PrintedAt"] == DBNull.Value
+        ? null
+        : Convert.ToDateTime(row["PrintedAt"])
                 });
             }
 
@@ -254,6 +311,10 @@ namespace Letter_Request_Management_System.Data.Repository
                     lr.LetterTypeName,
                     lr.RequestDate,
                     lr.Status,
+                    lr.CopyType,
+                    lr.IsPrinted,
+                    lr.PrintedByUserId,
+                    lr.PrintedAt,
                     lr.LetterContentSnapshot AS LetterContent
                 FROM dbo.LetterRequests AS lr
                 INNER JOIN dbo.Users AS u
@@ -283,7 +344,16 @@ namespace Letter_Request_Management_System.Data.Repository
                 LetterTypeName = row["LetterTypeName"]?.ToString() ?? string.Empty,
                 RequestDate = Convert.ToDateTime(row["RequestDate"]),
                 Status = row["Status"]?.ToString() ?? string.Empty,
-                LetterContent = row["LetterContent"]?.ToString() ?? string.Empty
+                LetterContent = row["LetterContent"]?.ToString() ?? string.Empty,
+                CopyType = row["CopyType"]?.ToString() ?? "Soft Copy",
+                IsPrinted = row["IsPrinted"] != DBNull.Value &&
+            Convert.ToBoolean(row["IsPrinted"]),
+                PrintedByUserId = row["PrintedByUserId"] == DBNull.Value
+    ? null
+    : Convert.ToInt32(row["PrintedByUserId"]),
+                PrintedAt = row["PrintedAt"] == DBNull.Value
+    ? null
+    : Convert.ToDateTime(row["PrintedAt"])
             };
         }
 
@@ -524,6 +594,41 @@ END CATCH;";
                 return null;
 
             return table.Rows[0]["FullName"]?.ToString();
+        }
+
+
+        public int MarkAsPrinted(int letterRequestId, int printedByUserId)
+        {
+            const string query = @"
+        SET NOCOUNT ON;
+        SET XACT_ABORT ON;
+
+        UPDATE dbo.LetterRequests
+        SET
+            IsPrinted = 1,
+            PrintedByUserId = @PrintedByUserId,
+            PrintedAt = SYSDATETIME()
+        WHERE LetterRequestId = @LetterRequestId
+          AND Status = 'Approved'
+          AND CopyType = 'Hard Copy'
+          AND IsPrinted = 0;
+
+        SELECT @@ROWCOUNT;";
+
+            var parameters = new List<DbParametersSql.QueryParameters>
+    {
+        DbParametersSql.SetValues(
+            "@LetterRequestId", SqlDbType.Int, letterRequestId),
+
+        DbParametersSql.SetValues(
+            "@PrintedByUserId", SqlDbType.Int, printedByUserId)
+    };
+
+            object result = _baseSqlDL.ExecuteScalar(query, parameters);
+
+            return result != null && result != DBNull.Value
+                ? Convert.ToInt32(result)
+                : 0;
         }
 
 

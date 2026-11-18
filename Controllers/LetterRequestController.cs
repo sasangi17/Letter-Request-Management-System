@@ -46,7 +46,7 @@ namespace Letter_Request_Management_System.Controllers
 
             try
             {
-                int requestId = _business.CreateRequest(userId,dto.LetterTypeName);
+                int requestId = _business.CreateRequest(userId,dto.LetterTypeName, dto.CopyType);
 
                 if (requestId == 0)
                 {
@@ -58,6 +58,7 @@ namespace Letter_Request_Management_System.Controllers
                     message = "Letter request created successfully.",
                     letterRequestId = requestId,
                     letterTypeName = dto.LetterTypeName,
+                    copyType = dto.CopyType,
                     status = "Pending"
                 });
             }

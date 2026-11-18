@@ -12,5 +12,10 @@
         public DateTime RequestDate { get; set; }
         public string Status { get; set; } = string.Empty;
         public string LetterContent { get; set; } = string.Empty;
+        public string CopyType { get; set; } = "Soft Copy";
+        public bool IsPrinted { get; set; }
+        public int? PrintedByUserId { get; set; }
+        public DateTime? PrintedAt { get; set; }
+
     }
 }

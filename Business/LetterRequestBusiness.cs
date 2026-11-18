@@ -25,10 +25,32 @@ namespace Letter_Request_Management_System.Business
         }
 
         // Create a new letter request
-        public int CreateRequest(int userId, string letterTypeName)
+        public int CreateRequest(
+            int userId,
+            string letterTypeName,
+            string copyType = "Soft Copy")
         {
             if (userId <= 0 || string.IsNullOrWhiteSpace(letterTypeName))
                 return 0;
+
+            // Validate copy type
+            if (string.IsNullOrWhiteSpace(copyType))
+                copyType = "Soft Copy";
+
+            copyType = copyType.Trim();
+
+            if (!copyType.Equals("Soft Copy", StringComparison.OrdinalIgnoreCase) &&
+                !copyType.Equals("Hard Copy", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException("Invalid copy type.");
+            }
+
+            // Normalize the value
+            copyType = copyType.Equals(
+                "Hard Copy",
+                StringComparison.OrdinalIgnoreCase)
+                    ? "Hard Copy"
+                    : "Soft Copy";
 
             // Retrieve employee information
             var employee = _letterRequestRepository.GetEmployeeForLetter(userId);
@@ -52,7 +74,8 @@ namespace Letter_Request_Management_System.Business
                 case "salary confirmation letter":
 
                     if (!employee.Salary.HasValue)
-                        throw new InvalidOperationException("Salary information is not available for this employee.");
+                        throw new InvalidOperationException(
+                            "Salary information is not available for this employee.");
 
                     letterContent = _salaryConfirmationLetterTemplate.GenerateLetter(employee);
                     break;
@@ -61,11 +84,12 @@ namespace Letter_Request_Management_System.Business
                     throw new ArgumentException("Invalid letter type.");
             }
 
-            // Save the generated letter content
+            // Save the generated letter content and selected copy type
             return _letterRequestRepository.CreateRequest(
                 userId,
                 letterTypeName.Trim(),
-                letterContent);
+                letterContent,
+                copyType);
         }
 
         public LetterRequestResponseDto? GetRequestById(int letterRequestId,int userId)

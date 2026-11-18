@@ -43,10 +43,7 @@ This confirmation letter is issued upon the employee's request for official purp
                 {
                     page.Size(PageSizes.A4);
                     page.Margin(45);
-
-                    page.DefaultTextStyle(style =>
-                        style.FontSize(12));
-
+                    page.DefaultTextStyle(style => style.FontSize(12));
                     page.Content().Column(column =>
                     {
                         column.Spacing(18);
@@ -57,10 +54,7 @@ This confirmation letter is issued upon the employee's request for official purp
                             .FontSize(18)
                             .Bold();
 
-                        column.Item()
-                            .AlignRight()
-                            .Text($"Date: {DateTimeUtility.FormatLetterDate(approvedAt)}");
-
+                        column.Item().AlignRight().Text($"Date: {DateTimeUtility.FormatLetterDate(approvedAt)}");
                         column.Item().Text(
                             $"This letter confirms that {employee.FullName}, " +
                             $"bearing Employee Number {employee.EmpNo}, " +
@@ -81,10 +75,7 @@ This confirmation letter is issued upon the employee's request for official purp
                         SignatureSectionUtility.AddSignatureSection(column, adminSignature, adminName, approvedAt);
                     });
 
-                    page.Footer()
-                        .AlignCenter()
-                        .Text("Employee Letter Request Management System")
-                        .FontSize(9);
+                    page.Footer().AlignCenter().Text("Employee Letter Request Management System").FontSize(9);
                 });
             }).GeneratePdf();
         }
@@ -102,14 +93,11 @@ This confirmation letter is issued upon the employee's request for official purp
                 adminSignature.SignatureImage == null ||
                 adminSignature.SignatureImage.Length == 0)
             {
-                throw new InvalidOperationException(
-                    "Admin signature is not available.");
+                throw new InvalidOperationException("Admin signature is not available.");
             }
 
             if (string.IsNullOrWhiteSpace(adminName))
-                throw new ArgumentException(
-                    "Admin name is required.",
-                    nameof(adminName));
+                throw new ArgumentException("Admin name is required.",nameof(adminName));
         }
     }
 }

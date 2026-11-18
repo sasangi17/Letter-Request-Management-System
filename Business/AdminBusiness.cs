@@ -67,6 +67,44 @@ namespace Letter_Request_Management_System.Business
                 rejectionReason.Trim());
         }
 
+        public int MarkRequestAsPrinted(int letterRequestId, int printedByUserId)
+        {
+            if (letterRequestId <= 0 || printedByUserId <= 0)
+                return 0;
+
+            // Get the request.
+            var request = _letterRequestRepository.GetAdminRequestById(
+                letterRequestId);
+
+            if (request == null)
+                return 0;
+
+            // Only approved requests can be printed.
+            if (!string.Equals(
+                request.Status,
+                "Approved",
+                StringComparison.OrdinalIgnoreCase))
+            {
+                return 2;
+            }
+
+            // Only Hard Copy requests use the HR collection process.
+            if (!string.Equals(
+                request.CopyType,
+                "Hard Copy",
+                StringComparison.OrdinalIgnoreCase))
+            {
+                return 3;
+            }
+
+            // Avoid marking an already printed request again.
+            if (request.IsPrinted)
+                return 4;
+
+            return _letterRequestRepository.MarkAsPrinted(
+                letterRequestId,
+                printedByUserId);
+        }
 
         public int ApproveRequest(int letterRequestId,int approvedByUserId)
         {
@@ -101,9 +139,7 @@ namespace Letter_Request_Management_System.Business
             }
 
             // Get the admin's full name.
-            string? adminName =
-                _letterRequestRepository.GetUserFullName(
-                    approvedByUserId);
+            string? adminName = _letterRequestRepository.GetUserFullName(approvedByUserId);
 
             if (string.IsNullOrWhiteSpace(adminName))
                 return 5;

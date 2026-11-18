@@ -270,6 +270,92 @@ namespace Letter_Request_Management_System.Controllers
             );
         }
 
+        // POST: /api/Admin/markprinted?id=12
+        // Admin confirms that an approved Hard Copy has been printed.
+        [HttpPost("markprinted")]
+        public IActionResult MarkRequestAsPrinted([FromQuery] int id)
+        {
+            if (id <= 0)
+            {
+                return BadRequest(new
+                {
+                    message = "A valid letter request ID is required."
+                });
+            }
+
+            string? userIdClaim =
+                User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (!int.TryParse(userIdClaim, out int adminUserId))
+                return Unauthorized(new
+                {
+                    message = "Invalid admin user."
+                });
+
+            try
+            {
+                int result = _adminBusiness.MarkRequestAsPrinted(
+                    id,
+                    adminUserId);
+
+                if (result == 0)
+                {
+                    return NotFound(new
+                    {
+                        message = "Letter request not found."
+                    });
+                }
+
+                if (result == 2)
+                {
+                    return BadRequest(new
+                    {
+                        message = "Only approved requests can be marked as printed."
+                    });
+                }
+
+                if (result == 3)
+                {
+                    return BadRequest(new
+                    {
+                        message = "This action is only available for Hard Copy requests."
+                    });
+                }
+
+                if (result == 4)
+                {
+                    return Conflict(new
+                    {
+                        message = "This request has already been marked as printed."
+                    });
+                }
+
+                if (result != 1)
+                {
+                    return StatusCode(500, new
+                    {
+                        message = "The request could not be marked as printed."
+                    });
+                }
+
+                return Ok(new
+                {
+                    message = "Hard Copy marked as printed successfully.",
+                    letterRequestId = id,
+                    isPrinted = true
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+
+                return StatusCode(500, new
+                {
+                    message = "An error occurred while updating the print status."
+                });
+            }
+        }
+
         // POST: /api/Admin/requestsreject?id=17
         // Reject an employee letter request.
         [HttpPost("requestsreject")]
