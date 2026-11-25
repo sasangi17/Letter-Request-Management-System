@@ -1,3 +1,4 @@
+
 import {
   Component,
   OnInit,
@@ -7,13 +8,12 @@ import {
 } from '@angular/core';
 
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
-import { Router, RouterModule } from '@angular/router';
+import { ActivatedRoute,Router, RouterModule } from '@angular/router';
 
 import { AuthService } from '../../services/auth.service';
 import { AdminHeader } from '../admin-header/admin-header';
-
+import { FooterComponent } from '../../shared/footer/footer';
 
 interface AdminLetterRequest {
   letterRequestId: number;
@@ -28,20 +28,25 @@ interface AdminLetterRequest {
   letterContent: string;
 }
 
+interface DailyActivity {
+  dayLabel: string;
+  fullDate: string;
+  count: number;
+  heightPercent: number;
+}
 
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
   imports: [
     CommonModule,
-    FormsModule,
     RouterModule,
-    AdminHeader
+    AdminHeader,
+    FooterComponent
   ],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css'
 })
-
 export class AdminDashboard implements OnInit {
 
   private readonly apiUrl =
@@ -51,10 +56,17 @@ export class AdminDashboard implements OnInit {
   adminEmail = '';
 
   requests: AdminLetterRequest[] = [];
-  selectedRequest: AdminLetterRequest | null = null;
 
-  selectedFilter = 'All';
-  searchText = '';
+  monthlyActivity: DailyActivity[] = [];
+
+  yAxisTicks: number[] = [4, 3, 2, 1, 0];
+
+  chartYAxisMax = 4;
+
+  currentMonth = new Date();
+
+  currentMonthLabel = '';
+  currentMonthRequests = 0;
 
   isLoading = true;
   errorMessage = '';
@@ -63,11 +75,13 @@ export class AdminDashboard implements OnInit {
     private authService: AuthService,
     private http: HttpClient,
     private router: Router,
+    private route: ActivatedRoute,
     private cdr: ChangeDetectorRef,
     @Inject(PLATFORM_ID) private platformId: object
   ) {}
 
   ngOnInit(): void {
+
     if (!isPlatformBrowser(this.platformId)) {
       return;
     }
@@ -80,6 +94,7 @@ export class AdminDashboard implements OnInit {
     }
 
     if (!this.authService.hasRole('Admin')) {
+
       if (this.authService.hasRole('Employee')) {
         this.router.navigate(['/employee']);
       } else {
@@ -93,44 +108,160 @@ export class AdminDashboard implements OnInit {
     this.adminName = user.fullName || 'Administrator';
     this.adminEmail = user.email || '';
 
+    this.currentMonth = new Date();
+
+    this.currentMonthLabel =
+      this.currentMonth.toLocaleDateString('en-US', {
+        month: 'long',
+        year: 'numeric'
+      });
+
     this.loadRequests();
   }
 
-  // Load all employee letter requests.
+  // Load requests from the existing backend API.
   loadRequests(): void {
+
     this.isLoading = true;
     this.errorMessage = '';
 
     this.http.get<AdminLetterRequest[]>(this.apiUrl).subscribe({
+
       next: (response) => {
+
         this.requests = Array.isArray(response) ? response : [];
+
+        this.calculateMonthlyActivity();
+
         this.isLoading = false;
         this.cdr.detectChanges();
       },
 
       error: (error) => {
+
         console.error('Failed to load admin requests:', error);
 
         this.requests = [];
+        this.monthlyActivity = [];
+        this.currentMonthRequests = 0;
+
         this.isLoading = false;
 
         if (error.status === 401) {
+
           this.errorMessage =
             'Your session has expired. Please log in again.';
+
         } else if (error.status === 403) {
+
           this.errorMessage =
             'You do not have permission to access the admin dashboard.';
+
         } else {
+
           this.errorMessage =
             'Unable to load letter requests. Please check the backend connection.';
+
         }
 
         this.cdr.detectChanges();
       }
+
     });
   }
 
-  // Dashboard summary counts.
+  // Navigate to Request Management with the selected filter.
+  openRequests(filter: string): void {
+
+    this.router.navigate(['/admin/requests'], {
+      queryParams: {
+        filter: filter
+      }
+    });
+
+  }
+
+  // Calculate daily requests for the current month.
+  private calculateMonthlyActivity(): void {
+
+    const year = this.currentMonth.getFullYear();
+    const month = this.currentMonth.getMonth();
+
+    const daysInMonth =
+      new Date(year, month + 1, 0).getDate();
+
+    const dailyCounts: number[] =
+      new Array(daysInMonth).fill(0);
+
+    this.currentMonthRequests = 0;
+
+    this.requests.forEach(request => {
+
+      if (!request.requestDate) {
+        return;
+      }
+
+      const requestDate = new Date(request.requestDate);
+
+      if (isNaN(requestDate.getTime())) {
+        return;
+      }
+
+      const requestYear = requestDate.getFullYear();
+      const requestMonth = requestDate.getMonth();
+      const requestDay = requestDate.getDate();
+
+      if (requestYear === year && requestMonth === month) {
+
+        dailyCounts[requestDay - 1]++;
+        this.currentMonthRequests++;
+
+      }
+
+    });
+
+    const maximumDailyRequests =
+      Math.max(...dailyCounts, 0);
+
+    const step = Math.max(
+      1,
+      Math.ceil(maximumDailyRequests / 4)
+    );
+
+    this.chartYAxisMax = step * 4;
+
+    this.yAxisTicks = [
+      this.chartYAxisMax,
+      step * 3,
+      step * 2,
+      step,
+      0
+    ];
+
+    this.monthlyActivity = dailyCounts.map((count, index) => {
+
+      const date = new Date(year, month, index + 1);
+
+      return {
+        dayLabel: String(index + 1),
+
+        fullDate: date.toLocaleDateString('en-US', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric'
+        }),
+
+        count,
+
+        heightPercent:
+          (count / this.chartYAxisMax) * 100
+      };
+
+    });
+
+  }
+
+  // Summary card counts.
   get totalRequests(): number {
     return this.requests.length;
   }
@@ -147,41 +278,29 @@ export class AdminDashboard implements OnInit {
     return this.countByStatus('Rejected');
   }
 
-  get filteredRequests(): AdminLetterRequest[] {
-    const search = this.searchText.trim().toLowerCase();
+  // Get latest five requests.
+  get recentRequests(): AdminLetterRequest[] {
 
-    return this.requests.filter(request => {
-      const matchesStatus =
-        this.selectedFilter === 'All' ||
-        request.status?.toLowerCase() ===
-          this.selectedFilter.toLowerCase();
+    return [...this.requests]
+      .sort((a, b) => {
 
-      const matchesSearch =
-        !search ||
-        request.employeeName?.toLowerCase().includes(search) ||
-        request.empNo?.toLowerCase().includes(search) ||
-        request.email?.toLowerCase().includes(search) ||
-        request.letterTypeName?.toLowerCase().includes(search);
+        const dateA = new Date(a.requestDate).getTime();
+        const dateB = new Date(b.requestDate).getTime();
 
-      return matchesStatus && matchesSearch;
-    });
+        return dateB - dateA;
+
+      })
+      .slice(0, 5);
+
   }
 
   private countByStatus(status: string): number {
-    return this.requests.filter(
-      request =>
-        request.status?.trim().toLowerCase() === status.toLowerCase()
+
+    return this.requests.filter(request =>
+      request.status?.trim().toLowerCase() ===
+      status.toLowerCase()
     ).length;
-  }
 
-  // Open request details.
-  viewRequest(request: AdminLetterRequest): void {
-    this.selectedRequest = request;
-  }
-
-  // Close request details.
-  closeDetails(): void {
-    this.selectedRequest = null;
   }
 
   // Refresh dashboard.
@@ -198,4 +317,5 @@ export class AdminDashboard implements OnInit {
     this.authService.logout();
     this.router.navigate(['/login']);
   }
+
 }

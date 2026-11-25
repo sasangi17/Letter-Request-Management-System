@@ -1,14 +1,13 @@
 <app-admin-header></app-admin-header>
+
+
 <main class="dashboard-container">
 
-  <!-- Page heading -->
+  <!-- Dashboard heading -->
   <section class="welcome-section">
-
     <div>
       <h1>Welcome, {{ adminName }}</h1>
-      <p>
-        Manage employee letter requests and monitor their progress.
-      </p>
+      <p>Here's an overview of employee letter requests.</p>
     </div>
 
     <button
@@ -17,103 +16,230 @@
       (click)="refreshDashboard()"
       [disabled]="isLoading">
 
-      {{ isLoading ? 'Loading...' : 'Refresh Requests' }}
+      {{ isLoading ? 'Loading...' : 'Refresh Dashboard' }}
 
     </button>
-
   </section>
 
-  <!-- Summary cards -->
-  <section class="summary-grid">
+  <!-- Error message -->
+  <div class="message error-message" *ngIf="errorMessage">
+    <p>{{ errorMessage }}</p>
 
-    <div class="summary-card total">
-      <div class="card-heading">
-        <span>Total Requests</span>
-        <span class="card-icon">▤</span>
-      </div>
-      <h2>{{ totalRequests }}</h2>
-      <p>All employee requests</p>
+    <button type="button" (click)="refreshDashboard()">
+      Try Again
+    </button>
+  </div>
+
+  
+<!-- Summary cards -->
+<section class="summary-grid">
+
+  <div
+    class="summary-card total"
+    role="button"
+    tabindex="0"
+    (click)="openRequests('All')"
+    (keydown.enter)="openRequests('All')"
+    (keydown.space)="openRequests('All'); $event.preventDefault()">
+
+    <div class="card-heading">
+      <span>Total Requests</span>
+      <span class="card-icon">▤</span>
     </div>
 
-    <div class="summary-card pending">
-      <div class="card-heading">
-        <span>Pending Requests</span>
-        <span class="card-icon">◷</span>
-      </div>
-      <h2>{{ pendingRequests }}</h2>
-      <p>Waiting for review</p>
+    <h2>{{ totalRequests }}</h2>
+    <p>All employee requests</p>
+
+  </div>
+
+  <div
+    class="summary-card pending"
+    role="button"
+    tabindex="0"
+    (click)="openRequests('Pending')"
+    (keydown.enter)="openRequests('Pending')"
+    (keydown.space)="openRequests('Pending'); $event.preventDefault()">
+
+    <div class="card-heading">
+      <span>Pending Requests</span>
+      <span class="card-icon">◷</span>
     </div>
 
-    <div class="summary-card approved">
-      <div class="card-heading">
-        <span>Approved Requests</span>
-        <span class="card-icon">✓</span>
-      </div>
-      <h2>{{ approvedRequests }}</h2>
-      <p>Successfully approved</p>
+    <h2>{{ pendingRequests }}</h2>
+    <p>Waiting for review</p>
+
+  </div>
+
+  <div
+    class="summary-card approved"
+    role="button"
+    tabindex="0"
+    (click)="openRequests('Approved')"
+    (keydown.enter)="openRequests('Approved')"
+    (keydown.space)="openRequests('Approved'); $event.preventDefault()">
+
+    <div class="card-heading">
+      <span>Approved Requests</span>
+      <span class="card-icon">✓</span>
     </div>
 
-    <div class="summary-card rejected">
-      <div class="card-heading">
-        <span>Rejected Requests</span>
-        <span class="card-icon">×</span>
-      </div>
-      <h2>{{ rejectedRequests }}</h2>
-      <p>Requests not approved</p>
+    <h2>{{ approvedRequests }}</h2>
+    <p>Successfully approved</p>
+
+  </div>
+
+  <div
+    class="summary-card rejected"
+    role="button"
+    tabindex="0"
+    (click)="openRequests('Rejected')"
+    (keydown.enter)="openRequests('Rejected')"
+    (keydown.space)="openRequests('Rejected'); $event.preventDefault()">
+
+    <div class="card-heading">
+      <span>Rejected Requests</span>
+      <span class="card-icon">×</span>
     </div>
 
-  </section>
+    <h2>{{ rejectedRequests }}</h2>
+    <p>Requests not approved</p>
 
-  <!-- Requests section -->
-  <section class="requests-section">
+  </div>
+
+</section>
+
+  <!-- Monthly activity chart -->
+  <section class="activity-section">
 
     <div class="section-heading">
       <div>
-        <h2>Employee Letter Requests</h2>
-        <p>Review and manage submitted letter requests.</p>
+        <h2>Monthly Request Activity</h2>
+        <p>
+          Daily letter requests submitted during
+          {{ currentMonthLabel }}.
+        </p>
+      </div>
+
+      <div class="month-label">
+        {{ currentMonthLabel }}
       </div>
     </div>
 
-    <!-- Search and filter -->
-    <div class="table-controls">
-
-      <input
-        type="text"
-        placeholder="Search employee, email or letter type..."
-        [(ngModel)]="searchText"
-        aria-label="Search requests">
-
-      <select
-        [(ngModel)]="selectedFilter"
-        aria-label="Filter requests by status">
-
-        <option value="All">All Requests</option>
-        <option value="Pending">Pending</option>
-        <option value="Approved">Approved</option>
-        <option value="Rejected">Rejected</option>
-        <option value="Cancelled">Cancelled</option>
-
-      </select>
-
-    </div>
-
-    <!-- Loading -->
     <div class="message loading-message" *ngIf="isLoading">
-      Loading employee requests...
+      Loading monthly activity...
     </div>
 
-    <!-- Error -->
-    <div class="message error-message" *ngIf="errorMessage">
-      <p>{{ errorMessage }}</p>
-      <button type="button" (click)="refreshDashboard()">
-        Try Again
-      </button>
+    <div
+      class="chart-container"
+      *ngIf="!isLoading && !errorMessage">
+
+      <div class="chart-summary">
+        <span class="chart-total">{{ currentMonthRequests }}</span>
+        <span class="chart-total-label">Requests this month</span>
+      </div>
+
+      <!-- Chart -->
+      <div class="chart-scroll">
+
+        <div class="chart-layout">
+
+          <!-- Y-axis -->
+<div class="y-axis-container">
+
+  <div class="y-axis-title">
+    Number of Requests
+  </div>
+
+  <div class="y-axis">
+    <span *ngFor="let tick of yAxisTicks">
+      {{ tick }}
+    </span>
+  </div>
+
+</div>
+
+          <!-- Chart plotting area -->
+          <div class="chart-plot">
+
+            <!-- Horizontal grid lines -->
+            <div class="chart-grid-lines">
+              <div
+                class="grid-line"
+                *ngFor="let tick of yAxisTicks">
+              </div>
+            </div>
+
+            <!-- Bars -->
+            <div class="daily-chart">
+
+              <div
+                class="chart-column"
+                *ngFor="let day of monthlyActivity"
+                [title]="day.fullDate + ': ' + day.count + ' request(s)'">
+
+                <div class="bar-track">
+
+                  <div
+                    class="bar-fill"
+                    [class.zero-bar]="day.count === 0"
+                    [style.height.%]="day.heightPercent">
+                  </div>
+
+                </div>
+
+                <span class="day-label">
+                  {{ day.dayLabel }}
+                </span>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="x-axis-title">
+          Days of the Month
+     </div>
+      
+      <div
+        class="empty-chart"
+        *ngIf="currentMonthRequests === 0">
+
+        No letter requests have been submitted this month yet.
+
+      </div>
+
     </div>
 
-    <!-- Requests table -->
-    <div class="table-wrapper" *ngIf="!isLoading && !errorMessage">
+  </section>
 
-      <table *ngIf="filteredRequests.length > 0; else noRequests">
+  <!-- Recent requests -->
+  <section class="recent-section">
+
+    <div class="section-heading">
+      <div>
+        <h2>Recent Requests</h2>
+        <p>The five most recently submitted employee letter requests.</p>
+      </div>
+
+      <a routerLink="/admin/requests" class="view-all-link">
+        View All Requests →
+      </a>
+    </div>
+
+    <div class="message loading-message" *ngIf="isLoading">
+      Loading recent requests...
+    </div>
+
+    <div
+      class="recent-table-wrapper"
+      *ngIf="!isLoading && !errorMessage">
+
+      <table *ngIf="recentRequests.length > 0; else noRecentRequests">
 
         <thead>
           <tr>
@@ -122,13 +248,12 @@
             <th>Letter Type</th>
             <th>Request Date</th>
             <th>Status</th>
-            <th>Action</th>
           </tr>
         </thead>
 
         <tbody>
 
-          <tr *ngFor="let request of filteredRequests">
+          <tr *ngFor="let request of recentRequests">
 
             <td>#{{ request.letterRequestId }}</td>
 
@@ -149,17 +274,10 @@
               <span
                 class="status-badge"
                 [ngClass]="getStatusClass(request.status)">
-                {{ request.status }}
-              </span>
-            </td>
 
-            <td>
-              <button
-                type="button"
-                class="view-btn"
-                (click)="viewRequest(request)">
-                View Details
-              </button>
+                {{ request.status }}
+
+              </span>
             </td>
 
           </tr>
@@ -168,11 +286,11 @@
 
       </table>
 
-      <ng-template #noRequests>
+      <ng-template #noRecentRequests>
         <div class="empty-state">
-          <h3>No requests found</h3>
+          <h3>No requests available</h3>
           <p>
-            There are no requests matching your search or selected filter.
+            Employee letter requests will appear here when submitted.
           </p>
         </div>
       </ng-template>
@@ -182,93 +300,4 @@
   </section>
 
 </main>
-
-<!-- Request details modal -->
-<div
-  class="modal-overlay"
-  *ngIf="selectedRequest"
-  (click)="closeDetails()">
-
-  <section
-    class="details-modal"
-    (click)="$event.stopPropagation()">
-
-    <div class="modal-heading">
-
-      <div>
-        <h2>Request Details</h2>
-        <p>
-          Request #{{ selectedRequest.letterRequestId }}
-        </p>
-      </div>
-
-      <button
-        type="button"
-        class="close-btn"
-        (click)="closeDetails()">
-        ×
-      </button>
-
-    </div>
-
-    <div class="details-grid">
-
-      <div class="detail-item">
-        <label>Employee Name</label>
-        <p>{{ selectedRequest.employeeName }}</p>
-      </div>
-
-      <div class="detail-item">
-        <label>Employee Number</label>
-        <p>{{ selectedRequest.empNo }}</p>
-      </div>
-
-      <div class="detail-item">
-        <label>Email Address</label>
-        <p>{{ selectedRequest.email }}</p>
-      </div>
-
-      <div class="detail-item">
-        <label>Department</label>
-        <p>{{ selectedRequest.department }}</p>
-      </div>
-
-      <div class="detail-item">
-        <label>Letter Type</label>
-        <p>{{ selectedRequest.letterTypeName }}</p>
-      </div>
-
-      <div class="detail-item">
-        <label>Request Date</label>
-        <p>
-          {{ selectedRequest.requestDate | date:'dd MMM yyyy, h:mm a' }}
-        </p>
-      </div>
-
-      <div class="detail-item">
-        <label>Status</label>
-        <p>{{ selectedRequest.status }}</p>
-      </div>
-
-    </div>
-
-    <div class="letter-content">
-
-      <h3>Letter Content</h3>
-
-      <p>{{ selectedRequest.letterContent }}</p>
-
-    </div>
-
-    <div class="modal-actions">
-      <button
-        type="button"
-        class="close-modal-btn"
-        (click)="closeDetails()">
-        Close
-      </button>
-    </div>
-
-  </section>
-
-</div>
+<app-footer></app-footer>

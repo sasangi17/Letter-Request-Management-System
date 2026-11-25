@@ -2,9 +2,10 @@ import { Component, OnInit, Inject, PLATFORM_ID ,ChangeDetectorRef } from '@angu
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
-import { AuthService } from '../services/auth.service';
+import { AuthService } from '../../services/auth.service';
 import { finalize } from 'rxjs';
-import {Header} from "../employee/header/header";
+import {Header} from "../header/header";
+import { FooterComponent } from '../../shared/footer/footer';
 
 interface LetterRequest {
   letterRequestId: number;
@@ -16,7 +17,8 @@ interface LetterRequest {
   standalone: true,
   imports: [CommonModule,
   RouterModule,
-  Header],
+  Header,
+  FooterComponent],
   templateUrl: './employee.html',
   styleUrl: './employee.css'
 })

@@ -1,4 +1,6 @@
+
 <app-admin-header></app-admin-header>
+
 <div class="page-container">
 
   <!-- Page Header -->
@@ -18,36 +20,12 @@
     {{ actionErrorMessage }}
   </div>
 
-  <!-- Summary Cards -->
-  <section class="summary-grid">
-
-    <div class="summary-card">
-      <span class="summary-label">Total Requests</span>
-      <h2>{{ totalRequests }}</h2>
-    </div>
-
-    <div class="summary-card pending-card">
-      <span class="summary-label">Pending</span>
-      <h2>{{ pendingRequests }}</h2>
-    </div>
-
-    <div class="summary-card approved-card">
-      <span class="summary-label">Approved</span>
-      <h2>{{ approvedRequests }}</h2>
-    </div>
-
-    <div class="summary-card rejected-card">
-      <span class="summary-label">Rejected</span>
-      <h2>{{ rejectedRequests }}</h2>
-    </div>
-
-  </section>
-
   <!-- Signature Upload -->
   <section class="signature-card">
 
     <div class="signature-information">
       <h2>Admin Signature</h2>
+
       <p>
         Upload your signature before approving employee requests.
         Accepted formats: PNG and JPG. Maximum size: 2 MB.
@@ -56,7 +34,9 @@
       <span
         class="signature-status"
         [class.uploaded]="signatureUploaded">
+
         {{ signatureUploaded ? 'Signature saved' : 'Signature not uploaded' }}
+
       </span>
     </div>
 
@@ -78,7 +58,9 @@
         class="upload-button"
         (click)="uploadSignature()"
         [disabled]="!selectedSignatureFile || isUploadingSignature">
+
         {{ isUploadingSignature ? 'Uploading...' : 'Upload Signature' }}
+
       </button>
 
     </div>
@@ -99,7 +81,9 @@
         class="refresh-button"
         (click)="loadRequests()"
         [disabled]="isLoading">
+
         {{ isLoading ? 'Loading...' : 'Refresh' }}
+
       </button>
     </div>
 
@@ -113,14 +97,27 @@
         placeholder="Search employee, email, number or letter type">
 
       <div class="filter-buttons">
+
         <button
           type="button"
           *ngFor="let filter of ['All', 'Pending', 'Approved', 'Rejected']"
           [class.active]="selectedFilter === filter"
           (click)="changeFilter(filter)">
+
           {{ filter }}
+
         </button>
+
       </div>
+
+    </div>
+
+    <!-- Current selected filter -->
+    <div class="active-filter-information" *ngIf="selectedFilter !== 'All'">
+
+      Showing
+      <strong>{{ selectedFilter }}</strong>
+      requests
 
     </div>
 
@@ -131,11 +128,13 @@
 
     <!-- Error -->
     <div class="error-message" *ngIf="!isLoading && errorMessage">
+
       {{ errorMessage }}
 
       <button type="button" (click)="loadRequests()">
         Try Again
       </button>
+
     </div>
 
     <!-- Requests Table -->
@@ -144,6 +143,7 @@
       *ngIf="!isLoading && !errorMessage && filteredRequests.length > 0">
 
       <table>
+
         <thead>
           <tr>
             <th>Request ID</th>
@@ -157,6 +157,7 @@
         </thead>
 
         <tbody>
+
           <tr *ngFor="let request of filteredRequests">
 
             <td>#{{ request.letterRequestId }}</td>
@@ -176,7 +177,9 @@
               <span
                 class="status-badge"
                 [ngClass]="getStatusClass(request.status)">
+
                 {{ request.status }}
+
               </span>
             </td>
 
@@ -185,12 +188,16 @@
                 type="button"
                 class="view-button"
                 (click)="viewRequest(request)">
+
                 View
+
               </button>
             </td>
 
           </tr>
+
         </tbody>
+
       </table>
 
     </div>
@@ -201,8 +208,13 @@
       *ngIf="!isLoading && !errorMessage && filteredRequests.length === 0">
 
       <h3>No requests found</h3>
-      <p>
-        There are no requests matching your selected filter or search.
+
+      <p *ngIf="selectedFilter !== 'All'">
+        There are no {{ selectedFilter.toLowerCase() }} requests available.
+      </p>
+
+      <p *ngIf="selectedFilter === 'All'">
+        There are no requests matching your search.
       </p>
 
     </div>
@@ -221,70 +233,74 @@
     class="details-modal"
     (click)="$event.stopPropagation()">
 
+    <!-- Modal Header -->
     <div class="modal-header">
+
       <div>
         <h2>Request Details</h2>
-        <p>Request #{{ selectedRequest.letterRequestId }}</p>
       </div>
 
       <button
         type="button"
         class="close-button"
         (click)="closeDetails()">
+
         &times;
+
       </button>
+
     </div>
 
+    <!-- Modal Body -->
     <div class="modal-body">
 
-      <div class="detail-grid">
-
-        <div class="detail-item">
-          <label>Employee Name</label>
-          <p>{{ selectedRequest.employeeName }}</p>
-        </div>
-
-        <div class="detail-item">
-          <label>Employee Number</label>
-          <p>{{ selectedRequest.empNo }}</p>
-        </div>
-
-        <div class="detail-item">
-          <label>Email Address</label>
-          <p>{{ selectedRequest.email }}</p>
-        </div>
-
-        <div class="detail-item">
-          <label>Department</label>
-          <p>{{ selectedRequest.department }}</p>
-        </div>
-
-        <div class="detail-item">
-          <label>Letter Type</label>
-          <p>{{ selectedRequest.letterTypeName }}</p>
-        </div>
-
-        <div class="detail-item">
-          <label>Request Date</label>
-          <p>{{ selectedRequest.requestDate | date:'dd MMM yyyy' }}</p>
-        </div>
-
-        <div class="detail-item">
-          <label>Status</label>
-          <span
-            class="status-badge"
-            [ngClass]="getStatusClass(selectedRequest.status)">
-            {{ selectedRequest.status }}
-          </span>
-        </div>
-
-      </div>
-
       <div class="letter-content-section">
-        <h3>Letter Content</h3>
+
         <div class="letter-content">
+
+          <!-- Letter content -->
           {{ selectedRequest.letterContent }}
+
+          <!-- Approving Admin Signature -->
+          <div
+            class="approval-signature-section"
+            *ngIf="selectedRequest.status.toLowerCase() === 'approved'">
+
+            <div
+              *ngIf="isLoadingApprovalSignature"
+              class="signature-loading">
+
+              Loading approval signature...
+
+            </div>
+
+            <div *ngIf="approvalSignature">
+
+              <div class="approval-admin-name">
+                <strong>Approved by:</strong>
+                {{ approvalSignature.approverName }}
+              </div>
+
+              <div class="approval-admin-signature">
+                <strong>Authorized Signature:</strong>
+
+                <img
+                  [src]="'data:' + approvalSignature.signatureContentType +
+                         ';base64,' + approvalSignature.signatureBase64"
+                  alt="Approving admin signature">
+              </div>
+
+              <div class="approval-date">
+                <strong>Approval Date:</strong>
+                {{ approvalSignature.approvedAt | date:'dd MMMM yyyy' }}
+              </div>
+
+            </div>
+
+          </div>
+
         </div>
+
       </div>
 
       <!-- Approval and rejection actions -->
@@ -366,21 +382,68 @@
 
       </div>
 
+      <!-- Modal Error -->
       <div class="modal-error" *ngIf="actionErrorMessage">
         {{ actionErrorMessage }}
       </div>
 
     </div>
 
+    <!-- Modal Footer -->
     <div class="modal-footer">
-      <button
-        type="button"
-        class="close-modal-button"
-        (click)="closeDetails()">
-        Close
-      </button>
+
+      <ng-container
+        *ngIf="selectedRequest.status.toLowerCase() === 'approved'; else normalClose">
+
+        <button
+          type="button"
+          class="print-button"
+          (click)="printApprovedPdf(selectedRequest)"
+          [disabled]="isPrintingPdf || isDownloadingPdf">
+
+          {{ isPrintingPdf ? 'Preparing...' : 'Print' }}
+
+        </button>
+
+        <button
+          type="button"
+          class="download-button"
+          (click)="downloadApprovedPdf(selectedRequest)"
+          [disabled]="isDownloadingPdf || isPrintingPdf">
+
+          {{ isDownloadingPdf ? 'Downloading...' : 'Download PDF' }}
+
+        </button>
+
+        <button
+          type="button"
+          class="close-modal-button"
+          (click)="closeDetails()">
+
+          Cancel
+
+        </button>
+
+      </ng-container>
+
+      <!-- Pending, rejected and cancelled request actions -->
+      <ng-template #normalClose>
+
+        <button
+          type="button"
+          class="close-modal-button"
+          (click)="closeDetails()">
+
+          Close
+
+        </button>
+
+      </ng-template>
+
     </div>
 
   </section>
 
 </div>
+
+<app-footer></app-footer>

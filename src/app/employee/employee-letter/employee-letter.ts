@@ -1,3 +1,4 @@
+
 import {
   Component,
   OnInit,
@@ -13,6 +14,7 @@ import { Router, RouterModule } from '@angular/router';
 
 import { AuthService } from '../../services/auth.service';
 import { Header } from '../../employee/header/header';
+import { FooterComponent } from '../../shared/footer/footer';
 
 interface LetterType {
   letterTypeName: string;
@@ -22,7 +24,7 @@ interface LetterType {
 @Component({
   selector: 'app-employee-letter',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, Header],
+  imports: [CommonModule, FormsModule, RouterModule, Header, FooterComponent],
   templateUrl: './employee-letter.html',
   styleUrl: './employee-letter.css'
 })
@@ -37,7 +39,6 @@ export class EmployeeLetter implements OnInit {
   employeeDepartment = '';
   employeePosition = '';
 
-  // These letter types are defined in the backend.
   letterTypes: LetterType[] = [
     {
       letterTypeName: 'Service Letter',
@@ -55,8 +56,10 @@ export class EmployeeLetter implements OnInit {
 
   selectedLetterTypeName: string | null = null;
 
-  isSubmitting = false;
+  // New: copy type selection
+  selectedCopyType = 'Soft Copy';
 
+  isSubmitting = false;
   errorMessage = '';
   successMessage = '';
 
@@ -87,7 +90,6 @@ export class EmployeeLetter implements OnInit {
         this.authService.logout();
         this.router.navigate(['/login']);
       }
-
       return;
     }
 
@@ -98,14 +100,12 @@ export class EmployeeLetter implements OnInit {
     this.employeePosition = user.position || '';
   }
 
-  // Get the selected letter type.
   get selectedLetterType(): LetterType | undefined {
     return this.letterTypes.find(
       type => type.letterTypeName === this.selectedLetterTypeName
     );
   }
 
-  // Submit a letter request.
   submitRequest(): void {
     this.errorMessage = '';
     this.successMessage = '';
@@ -115,23 +115,28 @@ export class EmployeeLetter implements OnInit {
       return;
     }
 
+    if (!['Soft Copy', 'Hard Copy'].includes(this.selectedCopyType)) {
+      this.errorMessage = 'Please select a valid copy type.';
+      return;
+    }
+
     this.isSubmitting = true;
 
     const requestData = {
-      letterTypeName: this.selectedLetterTypeName
+      letterTypeName: this.selectedLetterTypeName,
+      copyType: this.selectedCopyType
     };
 
-    this.http.post(
-      this.requestUrl,
-      requestData
-    ).subscribe({
+    this.http.post(this.requestUrl, requestData).subscribe({
       next: (response) => {
         console.log('Letter request submitted:', response);
 
         this.successMessage =
-          'Your letter request has been submitted successfully.';
+          `${this.selectedCopyType} request submitted successfully.`;
 
         this.selectedLetterTypeName = null;
+        this.selectedCopyType = 'Soft Copy';
+
         this.isSubmitting = false;
         this.cdr.detectChanges();
       },
@@ -142,7 +147,7 @@ export class EmployeeLetter implements OnInit {
         if (error.status === 400) {
           this.errorMessage =
             error.error?.message ||
-            'The request could not be submitted. Please check the selected letter type.';
+            'The request could not be submitted. Please check your selections.';
         } else if (error.status === 401) {
           this.errorMessage =
             'Your session has expired. Please log in again.';

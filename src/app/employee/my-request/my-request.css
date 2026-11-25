@@ -453,6 +453,48 @@ tbody tr:last-child td {
   text-align: center;
 }
 
+
+.copy-type-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.copy-type-badge.hard-copy {
+  background-color: #fff0d9;
+  color: #a65b00;
+}
+
+.copy-type-badge.soft-copy {
+  background-color: #e5f3ff;
+  color: #1769aa;
+}
+.waiting-hr {
+  color: #8a671e;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.collect-hr {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 11px;
+  border-radius: 6px;
+  color: #23754b;
+  background: #eaf7ef;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.collect-icon {
+  font-size: 15px;
+}
+
+
 /* ==============================
    Responsive Design
 ============================== */

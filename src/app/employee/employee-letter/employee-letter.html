@@ -109,6 +109,37 @@
 
       </div>
 
+
+<!-- Copy Type Selection -->
+<div class="form-group copy-type-group">
+
+  <label for="copyType">
+    Select Copy Type <span>*</span>
+  </label>
+
+  <select
+    id="copyType"
+    name="copyType"
+    [(ngModel)]="selectedCopyType"
+    required>
+
+    <option value="Soft Copy">Soft Copy</option>
+    <option value="Hard Copy">Hard Copy</option>
+
+  </select>
+
+  <p class="copy-type-description" *ngIf="selectedCopyType === 'Soft Copy'">
+    You will be able to download your approved and digitally signed letter.
+  </p>
+
+  <p class="copy-type-description" *ngIf="selectedCopyType === 'Hard Copy'">
+    After approval and printing by the administrator, you can collect
+    your signed physical letter from HR.
+  </p>
+
+</div>
+
+
       <!-- Actions -->
       <div class="form-actions">
 
@@ -133,3 +164,4 @@
   </section>
 
 </div>
+<app-footer></app-footer>

@@ -1,3 +1,4 @@
+
 <app-header></app-header>
 
 <main class="page-container">
@@ -9,41 +10,31 @@
     </div>
   </header>
 
-  <!-- Success -->
-  <div
-    class="success-message"
-    *ngIf="successMessage"
-    role="status">
+  <div class="success-message" *ngIf="successMessage" role="status">
     {{ successMessage }}
   </div>
 
-  <!-- Loading -->
   <div class="message-card" *ngIf="isLoading">
     Loading your requests...
   </div>
 
-  <!-- Error -->
   <div
     class="error-message"
     *ngIf="!isLoading && errorMessage"
     role="alert">
+
     {{ errorMessage }}
 
-    <button
-      type="button"
-      class="retry-btn"
-      (click)="loadRequests()">
+    <button type="button" class="retry-btn" (click)="loadRequests()">
       Try Again
     </button>
   </div>
 
-  <!-- No requests -->
   <div
     class="empty-card"
     *ngIf="!isLoading && !errorMessage && requests.length === 0">
 
     <h3>No Requests Found</h3>
-
     <p>You haven't submitted any letter requests yet.</p>
 
     <button
@@ -55,7 +46,6 @@
 
   </div>
 
-  <!-- Requests table -->
   <section
     class="requests-card"
     *ngIf="!isLoading && requests.length > 0">
@@ -71,6 +61,7 @@
         <thead>
           <tr>
             <th>Letter Type</th>
+            <th>Copy Type</th>
             <th>Request Date</th>
             <th>Status</th>
             <th>Action</th>
@@ -81,6 +72,17 @@
           <tr *ngFor="let request of requests">
 
             <td>{{ request.letterTypeName }}</td>
+
+            <td>
+            <span
+               class="copy-type-badge"
+               [ngClass]="{
+              'hard-copy': request.copyType === 'Hard Copy',
+              'soft-copy': request.copyType === 'Soft Copy'
+                 }">
+            {{ request.copyType }}
+           </span>
+           </td>
 
             <td>
               {{ request.requestDate | date:'dd MMM yyyy' }}
@@ -102,10 +104,8 @@
             <td>
               <ng-container [ngSwitch]="request.status.toLowerCase()">
 
-                <!-- Pending actions -->
-                <div
-                  class="action-buttons"
-                  *ngSwitchCase="'pending'">
+                <!-- Pending: same actions for both copy types -->
+                <div class="action-buttons" *ngSwitchCase="'pending'">
 
                   <button
                     type="button"
@@ -130,33 +130,53 @@
 
                 </div>
 
-                <!-- Approved action -->
-                <button
-                  *ngSwitchCase="'approved'"
-                  type="button"
-                  class="download-btn"
-                  [disabled]="downloadingRequestId === request.letterRequestId"
-                  (click)="downloadLetter(request)">
+                <!-- Approved: handle both copy types -->
+                <ng-container *ngSwitchCase="'approved'">
 
-                  {{
-                    downloadingRequestId === request.letterRequestId
-                      ? 'Downloading...'
-                      : 'Download Signed Letter'
-                  }}
+                  <!-- Approved Soft Copy -->
+                  <button
+                    *ngIf="request.copyType === 'Soft Copy'"
+                    type="button"
+                    class="download-btn"
+                    [disabled]="downloadingRequestId === request.letterRequestId"
+                    (click)="downloadLetter(request)">
 
-                </button>
+                    {{
+                      downloadingRequestId === request.letterRequestId
+                        ? 'Downloading...'
+                        : 'Download Signed Letter'
+                    }}
 
-                <!-- Rejected or cancelled -->
-                <span
-                  *ngSwitchCase="'rejected'"
-                  class="action-info">
+                  </button>
+
+                  <!-- Approved Hard Copy -->
+                  <div
+                    *ngIf="request.copyType === 'Hard Copy'"
+                    class="hard-copy-action">
+
+                    <span *ngIf="!request.isPrinted" class="waiting-hr">
+                      Waiting for HR to print
+                    </span>
+
+                    <span *ngIf="request.isPrinted" class="collect-hr">
+                      <span class="collect-icon">✓</span>
+                      Collect from HR
+                    </span>
+
+                  </div>
+
+                </ng-container>
+
+                <span *ngSwitchCase="'rejected'" class="action-info">
                   Request rejected
                 </span>
 
-                <span
-                  *ngSwitchCase="'cancelled'"
-                  class="action-info">
+                <span *ngSwitchCase="'cancelled'" class="action-info">
                   Request cancelled
+                </span>
+
+                <span *ngSwitchDefault class="action-info">
+                  No action available
                 </span>
 
               </ng-container>
@@ -232,3 +252,4 @@
   </div>
 
 </div>
+<app-footer></app-footer>

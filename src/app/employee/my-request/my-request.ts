@@ -1,3 +1,4 @@
+
 import {
   Component,
   OnInit,
@@ -12,6 +13,7 @@ import { Router, RouterModule } from '@angular/router';
 
 import { AuthService } from '../../services/auth.service';
 import { Header } from '../../employee/header/header';
+import { FooterComponent } from '../../shared/footer/footer';
 
 interface LetterRequest {
   letterRequestId: number;
@@ -19,6 +21,10 @@ interface LetterRequest {
   requestDate: string;
   status: string;
   letterContent: string;
+  copyType: string;
+  isPrinted: boolean;
+  printedByUserId?: number | null;
+  printedAt?: string | null;
 }
 
 interface LetterPreview {
@@ -34,7 +40,8 @@ interface LetterPreview {
   imports: [
     CommonModule,
     RouterModule,
-    Header
+    Header,
+    FooterComponent
   ],
   templateUrl: './my-request.html',
   styleUrl: './my-request.css'
@@ -76,6 +83,7 @@ export class MyRequests implements OnInit {
   ) {}
 
   ngOnInit(): void {
+
     if (!isPlatformBrowser(this.platformId)) {
       return;
     }
@@ -88,6 +96,7 @@ export class MyRequests implements OnInit {
     }
 
     if (!this.authService.hasRole('Employee')) {
+
       if (this.authService.hasRole('Admin')) {
         this.router.navigate(['/admin']);
       } else {
@@ -101,35 +110,52 @@ export class MyRequests implements OnInit {
     this.loadRequests();
   }
 
-  // Load logged-in employee's requests.
-  loadRequests(): void {
-    this.isLoading = true;
-    this.errorMessage = '';
-    this.successMessage = '';
+  // Load employee letter requests
+ loadRequests(): void {
+  this.isLoading = true;
+  this.errorMessage = '';
 
-    this.http.get<LetterRequest[]>(this.requestUrl).subscribe({
-      next: response => {
-        this.requests = Array.isArray(response) ? response : [];
+  this.http.get<LetterRequest[]>(this.requestUrl).subscribe({
+    next: response => {
+      console.log('API requests:', response);
 
-        this.isLoading = false;
-        this.cdr.detectChanges();
-      },
+      this.requests = Array.isArray(response)
+        ? response.map(request => ({
+            ...request,
+            copyType: request.copyType?.trim() || 'Soft Copy',
+            isPrinted: request.isPrinted ?? false
+          }))
+        : [];
 
-      error: error => {
-        console.error('Failed to load requests:', error);
+      console.log(
+        'Copy types received:',
+        this.requests.map(request => ({
+          id: request.letterRequestId,
+          copyType: request.copyType,
+          isPrinted: request.isPrinted
+        }))
+      );
 
-        this.errorMessage = error.status === 401
-          ? 'Your session has expired. Please log in again.'
-          : 'Unable to load your requests. Please try again.';
+      this.isLoading = false;
+      this.cdr.detectChanges();
+    },
 
-        this.isLoading = false;
-        this.cdr.detectChanges();
-      }
-    });
-  }
+    error: error => {
+      console.error('Failed to load requests:', error);
 
-  // Display a pending letter preview.
+      this.errorMessage = error.status === 401
+        ? 'Your session has expired. Please log in again.'
+        : 'Unable to load your requests. Please try again.';
+
+      this.isLoading = false;
+      this.cdr.detectChanges();
+    }
+  });
+}
+
+  // View pending letter preview
   viewLetter(request: LetterRequest): void {
+
     if (request.status?.toLowerCase() !== 'pending') {
       return;
     }
@@ -143,7 +169,9 @@ export class MyRequests implements OnInit {
     this.http.get<LetterPreview>(
       `${this.previewUrl}?id=${request.letterRequestId}`
     ).subscribe({
+
       next: response => {
+
         if (response.status?.toLowerCase() !== 'pending') {
           this.closePreview();
           this.loadRequests();
@@ -152,11 +180,11 @@ export class MyRequests implements OnInit {
 
         this.previewLetter = response;
         this.isPreviewLoading = false;
-
         this.cdr.detectChanges();
       },
 
       error: error => {
+
         console.error('Preview failed:', error);
 
         this.isPreviewLoading = false;
@@ -168,19 +196,26 @@ export class MyRequests implements OnInit {
 
         this.cdr.detectChanges();
       }
+
     });
   }
 
+  // Close preview modal
   closePreview(): void {
+
     this.showPreview = false;
     this.previewLetter = null;
     this.previewLetterTypeName = '';
     this.isPreviewLoading = false;
   }
 
-  // Download only approved and signed letters.
+  // Download approved Soft Copy
   downloadLetter(request: LetterRequest): void {
-    if (request.status?.toLowerCase() !== 'approved') {
+
+    if (
+      request.status?.toLowerCase() !== 'approved' ||
+      request.copyType !== 'Soft Copy'
+    ) {
       return;
     }
 
@@ -191,7 +226,9 @@ export class MyRequests implements OnInit {
       `${this.downloadUrl}?id=${request.letterRequestId}`,
       { responseType: 'blob' }
     ).subscribe({
+
       next: file => {
+
         if (!isPlatformBrowser(this.platformId)) {
           this.downloadingRequestId = null;
           return;
@@ -214,6 +251,7 @@ export class MyRequests implements OnInit {
       },
 
       error: error => {
+
         console.error('Failed to download letter:', error);
 
         this.errorMessage = error.status === 401
@@ -223,11 +261,13 @@ export class MyRequests implements OnInit {
         this.downloadingRequestId = null;
         this.cdr.detectChanges();
       }
+
     });
   }
 
-  // Cancel only pending requests.
+  // Cancel pending request
   cancelRequest(request: LetterRequest): void {
+
     if (request.status?.toLowerCase() !== 'pending') {
       return;
     }
@@ -248,27 +288,32 @@ export class MyRequests implements OnInit {
       `${this.cancelUrl}?id=${request.letterRequestId}`,
       null
     ).subscribe({
-      next: response => {
-        console.log('Request cancelled:', response);
+
+      next: () => {
 
         this.successMessage =
           'Your letter request has been cancelled successfully.';
 
         this.cancellingRequestId = null;
-
         this.loadRequests();
       },
 
       error: error => {
+
         console.error('Failed to cancel request:', error);
 
         if (error.status === 401) {
+
           this.errorMessage =
             'Your session has expired. Please log in again.';
+
         } else if (error.status === 404) {
+
           this.errorMessage =
             'The request was not found or is no longer pending. Refresh the page and try again.';
+
         } else {
+
           this.errorMessage =
             error.error?.message ||
             'Unable to cancel the request. Please try again.';
@@ -277,9 +322,11 @@ export class MyRequests implements OnInit {
         this.cancellingRequestId = null;
         this.cdr.detectChanges();
       }
+
     });
   }
 
+  // Navigate to new letter request page
   goToRequestLetter(): void {
     this.router.navigate(['/employee/employee-letter']);
   }

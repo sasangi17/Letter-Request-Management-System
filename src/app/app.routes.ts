@@ -5,7 +5,7 @@ import { Login } from './login/login';
 import { authGuard } from './guards/auth.guard';
 import { roleGuard } from './guards/role.guard';
 
-import { Employee } from './employee/employee';
+import { Employee } from './employee/employee-dashboard/employee';
 import { EmployeeLetter } from './employee/employee-letter/employee-letter';
 import { MyRequests } from './employee/my-request/my-request';
 import { AdminDashboard } from './admin/dashboard/dashboard';

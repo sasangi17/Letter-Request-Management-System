@@ -264,6 +264,19 @@ button:disabled {
   margin: 6px 0 0;
 }
 
+
+.copy-type-group {
+  margin-top: 22px;
+}
+
+.copy-type-description {
+  margin: 0;
+  color: #69788e;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+
 @media (max-width: 600px) {
   .details-grid {
     grid-template-columns: 1fr;
