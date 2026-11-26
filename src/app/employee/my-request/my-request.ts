@@ -1,4 +1,3 @@
-
 import {
   Component,
   OnInit,
@@ -48,17 +47,10 @@ interface LetterPreview {
 })
 export class MyRequests implements OnInit {
 
-  private readonly requestUrl =
-    'https://localhost:7103/api/LetterRequest/myrequest';
-
-  private readonly previewUrl =
-    'https://localhost:7103/api/LetterPdf/preview';
-
-  private readonly downloadUrl =
-    'https://localhost:7103/api/LetterPdf/download';
-
-  private readonly cancelUrl =
-    'https://localhost:7103/api/LetterRequest/cancel';
+  private readonly requestUrl = 'https://localhost:7103/api/LetterRequest/myrequest';
+  private readonly previewUrl = 'https://localhost:7103/api/LetterPdf/preview';
+  private readonly downloadUrl = 'https://localhost:7103/api/LetterPdf/download';
+  private readonly cancelUrl = 'https://localhost:7103/api/LetterRequest/cancel';
 
   requests: LetterRequest[] = [];
 

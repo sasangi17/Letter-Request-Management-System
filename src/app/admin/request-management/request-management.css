@@ -671,6 +671,32 @@ button:disabled {
   padding: 10px 0;
 }
 
+
+/* Hard Copy and Soft Copy badges */
+
+.hard-copy,
+.soft-copy {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.hard-copy {
+  color: #315c9a;
+  background: #eaf1fb;
+  border: 1px solid #cbdcf3;
+}
+
+.soft-copy {
+  color: #23754b;
+  background: #e7f6ec;
+  border: 1px solid #c5e8d0;
+}
+
+
 /* Responsive */
 
 @media (max-width: 850px) {
