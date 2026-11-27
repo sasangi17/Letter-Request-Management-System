@@ -13,13 +13,16 @@ namespace Letter_Request_Management_System.Controllers
     {
         private readonly AdminBusiness _adminBusiness;
         private readonly AdminSignatureBusiness _adminSignatureBusiness;
+        private readonly LetterPdfBusiness _letterPdfBusiness;
 
         public AdminController(
             AdminBusiness adminBusiness,
-            AdminSignatureBusiness adminSignatureBusiness)
+            AdminSignatureBusiness adminSignatureBusiness,
+            LetterPdfBusiness letterPdfBusiness)
         {
             _adminBusiness = adminBusiness;
             _adminSignatureBusiness = adminSignatureBusiness;
+            _letterPdfBusiness = letterPdfBusiness;
         }
 
         // GET: /api/Admin/requests
@@ -158,8 +161,7 @@ namespace Letter_Request_Management_System.Controllers
                     });
                 }
 
-                string extension = Path.GetExtension(signature.FileName)
-                    .ToLowerInvariant();
+                string extension = Path.GetExtension(signature.FileName).ToLowerInvariant();
 
                 if (extension != ".png" &&
                     extension != ".jpg" &&
@@ -463,6 +465,68 @@ namespace Letter_Request_Management_System.Controllers
                     message = "An error occurred while rejecting the letter request."
                 });
             }
+        }
+
+        // GET: /api/Admin/approvedpdf?id=3
+        // Download an approved signed PDF as Admin.
+        // GET: /api/Admin/approvedpdf?id=40
+        [HttpGet("approvedpdf")]
+        public IActionResult GetApprovedPdfForAdmin([FromQuery] int id)
+        {
+            if (id <= 0)
+            {
+                return BadRequest(new
+                {
+                    message = "A valid letter request ID is required."
+                });
+            }
+
+            var result = _adminBusiness.GetApprovedPdfForAdminDownload(id);
+
+            if (result == null)
+            {
+                return NotFound(new
+                {
+                    message = "Approved signed PDF not found."
+                });
+            }
+
+            return File(
+                result.Value.PdfBytes,
+                "application/pdf",
+                result.Value.FileName);
+        }
+
+        // GET: /api/Admin/approvalsignature?id=40
+        // Retrieve the signature of the admin who approved this request.
+        [HttpGet("approvalsignature")]
+        public IActionResult GetApprovalSignature([FromQuery] int id)
+        {
+            if (id <= 0)
+            {
+                return BadRequest(new
+                {
+                    message = "A valid letter request ID is required."
+                });
+            }
+
+            var approval = _adminBusiness.GetApprovalSignature(id);
+
+            if (approval == null)
+            {
+                return NotFound(new
+                {
+                    message = "Approval signature not found."
+                });
+            }
+
+            return Ok(new
+            {
+                approverName = approval.Value.ApproverName,
+                approvedAt = approval.Value.ApprovedAt,
+                signatureBase64 = approval.Value.SignatureBase64,
+                signatureContentType = approval.Value.SignatureContentType
+            });
         }
     }
 }

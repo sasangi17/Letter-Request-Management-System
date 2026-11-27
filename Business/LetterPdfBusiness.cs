@@ -139,5 +139,38 @@ namespace Letter_Request_Management_System.Business
 
             return $"{combined}.pdf";
         }
+
+        // Retrieve an approved signed PDF for Admin.
+        public (byte[] PdfBytes, string FileName)? GetApprovedPdfForAdminDownload(
+            int letterRequestId)
+        {
+            if (letterRequestId <= 0)
+                return null;
+
+            var approvedLetter =
+                _letterRequestRepository.GetApprovedLetterForAdminDownload(
+                    letterRequestId);
+
+            if (approvedLetter == null ||
+                string.IsNullOrWhiteSpace(approvedLetter.LetterContent) ||
+                approvedLetter.SignatureImage == null ||
+                approvedLetter.SignatureImage.Length == 0)
+            {
+                return null;
+            }
+
+            var pdfBytes = _signedLetterPdfService.GenerateSignedPdfBytes(
+                approvedLetter.LetterContent,
+                approvedLetter.ApproverName,
+                approvedLetter.ApprovedAt,
+                approvedLetter.SignatureImage);
+
+            string fileName = BuildDownloadFileName(
+                approvedLetter.EmployeeName,
+                approvedLetter.LetterTypeName,
+                letterRequestId);
+
+            return (pdfBytes, fileName);
+        }
     }
 }

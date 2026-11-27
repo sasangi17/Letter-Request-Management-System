@@ -30,6 +30,10 @@ namespace Letter_Request_Management_System.Business
             return _letterRequestRepository.GetAdminRequestById(letterRequestId);
         }
 
+        public (byte[] PdfBytes, string FileName)? GetApprovedPdfForAdminDownload(int letterRequestId)
+        {
+            return _letterPdfBusiness.GetApprovedPdfForAdminDownload(letterRequestId);
+        }
 
         public int RejectRequest(int letterRequestId,int rejectedByUserId,string rejectionReason)
         {
@@ -163,6 +167,55 @@ namespace Letter_Request_Management_System.Business
                 pdfReference);
 
 
+        }
+
+        public (string ApproverName, DateTime ApprovedAt, string SignatureBase64, string SignatureContentType)?
+    GetApprovalSignature(int letterRequestId)
+        {
+            if (letterRequestId <= 0)
+                return null;
+
+            // Reuse the existing repository method.
+            var approval =
+                _letterRequestRepository.GetApprovedLetterForAdminDownload(letterRequestId);
+
+            if (approval == null ||
+                approval.SignatureImage == null ||
+                approval.SignatureImage.Length == 0)
+            {
+                return null;
+            }
+
+            string contentType = "application/octet-stream";
+
+            // Detect PNG.
+            if (approval.SignatureImage.Length >= 8 &&
+                approval.SignatureImage[0] == 0x89 &&
+                approval.SignatureImage[1] == 0x50 &&
+                approval.SignatureImage[2] == 0x4E &&
+                approval.SignatureImage[3] == 0x47 &&
+                approval.SignatureImage[4] == 0x0D &&
+                approval.SignatureImage[5] == 0x0A &&
+                approval.SignatureImage[6] == 0x1A &&
+                approval.SignatureImage[7] == 0x0A)
+            {
+                contentType = "image/png";
+            }
+            // Detect JPG/JPEG.
+            else if (approval.SignatureImage.Length >= 3 &&
+                     approval.SignatureImage[0] == 0xFF &&
+                     approval.SignatureImage[1] == 0xD8 &&
+                     approval.SignatureImage[2] == 0xFF)
+            {
+                contentType = "image/jpeg";
+            }
+
+            return (
+                approval.ApproverName,
+                approval.ApprovedAt,
+                Convert.ToBase64String(approval.SignatureImage),
+                contentType
+            );
         }
     }
 }

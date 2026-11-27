@@ -40,9 +40,7 @@ namespace Letter_Request_Management_System.Data.Repository
             ON lr.UserId = u.UserId
         ORDER BY lr.RequestDate DESC;";
 
-            DataTable table = _baseSqlDL.ExecuteReader(
-                query,
-                new List<DbParametersSql.QueryParameters>());
+            DataTable table = _baseSqlDL.ExecuteReader( query,new List<DbParametersSql.QueryParameters>());
 
             var requests = new List<AdminLetterRequestDto>();
 
@@ -60,16 +58,10 @@ namespace Letter_Request_Management_System.Data.Repository
                     RequestDate = Convert.ToDateTime(row["RequestDate"]),
                     Status = row["Status"]?.ToString() ?? string.Empty,
                     LetterContent = row["LetterContent"]?.ToString() ?? string.Empty,
-
                     CopyType = row["CopyType"]?.ToString() ?? "Soft Copy",
-                    IsPrinted = row["IsPrinted"] != DBNull.Value &&
-                                Convert.ToBoolean(row["IsPrinted"]),
-                    PrintedByUserId = row["PrintedByUserId"] == DBNull.Value
-                        ? null
-                        : Convert.ToInt32(row["PrintedByUserId"]),
-                    PrintedAt = row["PrintedAt"] == DBNull.Value
-                        ? null
-                        : Convert.ToDateTime(row["PrintedAt"])
+                    IsPrinted = row["IsPrinted"] != DBNull.Value && Convert.ToBoolean(row["IsPrinted"]),
+                    PrintedByUserId = row["PrintedByUserId"] == DBNull.Value ? null : Convert.ToInt32(row["PrintedByUserId"]),
+                    PrintedAt = row["PrintedAt"] == DBNull.Value ? null: Convert.ToDateTime(row["PrintedAt"])
                 });
             }
 
@@ -97,8 +89,7 @@ namespace Letter_Request_Management_System.Data.Repository
 
             var parameters = new List<DbParametersSql.QueryParameters>
             {
-                DbParametersSql.SetValues(
-                    "@UserId", SqlDbType.Int, userId)
+                DbParametersSql.SetValues("@UserId", SqlDbType.Int, userId)
             };
 
             DataTable table = _baseSqlDL.ExecuteReader(query, parameters);
@@ -227,17 +218,9 @@ WHERE lr.LetterRequestId = @LetterRequestId
                 Status = row["Status"]?.ToString() ?? string.Empty,
                 LetterContent = row["LetterContent"]?.ToString() ?? string.Empty,
                 CopyType = row["CopyType"]?.ToString() ?? "Soft Copy",
-
-                IsPrinted = row["IsPrinted"] != DBNull.Value &&
-            Convert.ToBoolean(row["IsPrinted"]),
-
-                PrintedByUserId = row["PrintedByUserId"] == DBNull.Value
-    ? null
-    : Convert.ToInt32(row["PrintedByUserId"]),
-
-                PrintedAt = row["PrintedAt"] == DBNull.Value
-    ? null
-    : Convert.ToDateTime(row["PrintedAt"])
+                IsPrinted = row["IsPrinted"] != DBNull.Value && Convert.ToBoolean(row["IsPrinted"]),
+                PrintedByUserId = row["PrintedByUserId"] == DBNull.Value ? null: Convert.ToInt32(row["PrintedByUserId"]),
+                PrintedAt = row["PrintedAt"] == DBNull.Value ? null: Convert.ToDateTime(row["PrintedAt"])
             };
         }
 
@@ -279,16 +262,10 @@ ORDER BY lr.RequestDate DESC;";
                     RequestDate = Convert.ToDateTime(row["RequestDate"]),
                     Status = row["Status"]?.ToString() ?? string.Empty,
                     LetterContent = row["LetterContent"]?.ToString() ?? string.Empty,
-
                     CopyType = row["CopyType"]?.ToString() ?? "Soft Copy",
-                    IsPrinted = row["IsPrinted"] != DBNull.Value &&
-                Convert.ToBoolean(row["IsPrinted"]),
-                    PrintedByUserId = row["PrintedByUserId"] == DBNull.Value
-        ? null
-        : Convert.ToInt32(row["PrintedByUserId"]),
-                    PrintedAt = row["PrintedAt"] == DBNull.Value
-        ? null
-        : Convert.ToDateTime(row["PrintedAt"])
+                    IsPrinted = row["IsPrinted"] != DBNull.Value && Convert.ToBoolean(row["IsPrinted"]),
+                    PrintedByUserId = row["PrintedByUserId"] == DBNull.Value? null: Convert.ToInt32(row["PrintedByUserId"]),
+                    PrintedAt = row["PrintedAt"] == DBNull.Value ? null: Convert.ToDateTime(row["PrintedAt"])
                 });
             }
 
@@ -346,14 +323,9 @@ ORDER BY lr.RequestDate DESC;";
                 Status = row["Status"]?.ToString() ?? string.Empty,
                 LetterContent = row["LetterContent"]?.ToString() ?? string.Empty,
                 CopyType = row["CopyType"]?.ToString() ?? "Soft Copy",
-                IsPrinted = row["IsPrinted"] != DBNull.Value &&
-            Convert.ToBoolean(row["IsPrinted"]),
-                PrintedByUserId = row["PrintedByUserId"] == DBNull.Value
-    ? null
-    : Convert.ToInt32(row["PrintedByUserId"]),
-                PrintedAt = row["PrintedAt"] == DBNull.Value
-    ? null
-    : Convert.ToDateTime(row["PrintedAt"])
+                IsPrinted = row["IsPrinted"] != DBNull.Value && Convert.ToBoolean(row["IsPrinted"]),
+                PrintedByUserId = row["PrintedByUserId"] == DBNull.Value? null: Convert.ToInt32(row["PrintedByUserId"]),
+                PrintedAt = row["PrintedAt"] == DBNull.Value ? null: Convert.ToDateTime(row["PrintedAt"])
             };
         }
 
@@ -617,11 +589,8 @@ END CATCH;";
 
             var parameters = new List<DbParametersSql.QueryParameters>
     {
-        DbParametersSql.SetValues(
-            "@LetterRequestId", SqlDbType.Int, letterRequestId),
-
-        DbParametersSql.SetValues(
-            "@PrintedByUserId", SqlDbType.Int, printedByUserId)
+        DbParametersSql.SetValues("@LetterRequestId", SqlDbType.Int, letterRequestId),
+        DbParametersSql.SetValues("@PrintedByUserId", SqlDbType.Int, printedByUserId)
     };
 
             object result = _baseSqlDL.ExecuteScalar(query, parameters);
@@ -659,6 +628,61 @@ END CATCH;";
     {
         DbParametersSql.SetValues("@LetterRequestId", SqlDbType.Int, letterRequestId),
         DbParametersSql.SetValues("@UserId", SqlDbType.Int, userId)
+    };
+
+            DataTable table = _baseSqlDL.ExecuteReader(query, parameters);
+
+            if (table.Rows.Count == 0)
+                return null;
+
+            DataRow row = table.Rows[0];
+
+            if (row["LetterContent"] == DBNull.Value ||
+                row["SignatureImageSnapshot"] == DBNull.Value ||
+                row["ApproverName"] == DBNull.Value ||
+                row["ApprovedAt"] == DBNull.Value)
+            {
+                return null;
+            }
+
+            return new ApprovedLetterDownloadDto
+            {
+                LetterContent = row["LetterContent"].ToString() ?? string.Empty,
+                LetterTypeName = row["LetterTypeName"]?.ToString() ?? string.Empty,
+                EmployeeName = row["EmployeeName"]?.ToString() ?? string.Empty,
+                SignatureImage = (byte[])row["SignatureImageSnapshot"],
+                ApproverName = row["ApproverName"].ToString() ?? string.Empty,
+                ApprovedAt = Convert.ToDateTime(row["ApprovedAt"])
+            };
+        }
+
+        // GET an approved letter for Admin PDF download
+        public ApprovedLetterDownloadDto? GetApprovedLetterForAdminDownload(int letterRequestId)
+        {
+            const string query = @"
+        SELECT
+            LR.LetterContentSnapshot AS LetterContent,
+            LR.LetterTypeName,
+            EmpUser.FullName AS EmployeeName,
+            LA.SignatureImageSnapshot,
+            AdminUser.FullName AS ApproverName,
+            LA.ApprovedAt
+        FROM dbo.LetterRequests AS LR
+        INNER JOIN dbo.LetterApprovals AS LA
+            ON LR.LetterRequestId = LA.LetterRequestId
+        INNER JOIN dbo.Users AS AdminUser
+            ON LA.ApprovedByUserId = AdminUser.UserId
+        INNER JOIN dbo.Users AS EmpUser
+            ON LR.UserId = EmpUser.UserId
+        WHERE LR.LetterRequestId = @LetterRequestId
+          AND LR.Status = 'Approved';";
+
+            var parameters = new List<DbParametersSql.QueryParameters>
+    {
+        DbParametersSql.SetValues(
+            "@LetterRequestId",
+            SqlDbType.Int,
+            letterRequestId)
     };
 
             DataTable table = _baseSqlDL.ExecuteReader(query, parameters);
