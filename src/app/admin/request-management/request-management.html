@@ -41,28 +41,41 @@
 
     <div class="signature-controls">
 
-      <div class="signature-preview" *ngIf="signaturePreviewUrl">
-        <img
-          [src]="signaturePreviewUrl"
-          alt="Admin signature preview">
-      </div>
+  <div class="signature-preview" *ngIf="signaturePreviewUrl">
+    <img
+      [src]="signaturePreviewUrl"
+      alt="Admin signature preview">
+  </div>
 
-      <input
-        type="file"
-        accept=".png,.jpg,.jpeg,image/png,image/jpeg"
-        (change)="onSignatureSelected($event)">
+  <input
+    type="file"
+    accept=".png,.jpg,.jpeg,image/png,image/jpeg"
+    (change)="onSignatureSelected($event)"
+    [disabled]="isCheckingSignature">
 
-      <button
-        type="button"
-        class="upload-button"
-        (click)="uploadSignature()"
-        [disabled]="!selectedSignatureFile || isUploadingSignature">
+  <p *ngIf="signatureCheckMessage">
+    {{ signatureCheckMessage }}
+  </p>
 
-        {{ isUploadingSignature ? 'Uploading...' : 'Upload Signature' }}
+  <button
+    type="button"
+    class="upload-button"
+    (click)="uploadSignature()"
+    [disabled]="!selectedSignatureFile ||
+                isUploadingSignature ||
+                isCheckingSignature">
 
-      </button>
+    {{
+      isCheckingSignature
+        ? 'Checking Image...'
+        : isUploadingSignature
+          ? 'Uploading...'
+          : 'Upload Signature'
+    }}
 
-    </div>
+  </button>
+
+</div>
 
   </section>
 

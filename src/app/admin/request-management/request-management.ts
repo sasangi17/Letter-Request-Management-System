@@ -20,6 +20,7 @@ import { AuthService } from '../../services/auth.service';
 import { AdminHeader } from '../admin-header/admin-header';
 import { FooterComponent } from '../../shared/footer/footer';
 
+
 interface AdminLetterRequest {
   letterRequestId: number;
   userId: number;
@@ -62,8 +63,7 @@ interface ApprovalSignature {
 })
 export class RequestManagement implements OnInit, OnDestroy {
 
-  private readonly adminUrl =
-    'https://localhost:7103/api/Admin';
+  private readonly adminUrl = 'https://localhost:7103/api/Admin';
 
   requests: AdminLetterRequest[] = [];
   selectedRequest: AdminLetterRequest | null = null;
@@ -95,6 +95,11 @@ export class RequestManagement implements OnInit, OnDestroy {
   // Approval signature displayed in approved request preview.
   approvalSignature: ApprovalSignature | null = null;
   isLoadingApprovalSignature = false;
+
+  isCheckingSignature = false;
+  signatureCheckMessage = '';
+
+  private openCvPromise: Promise<any> | null = null;
 
   private isBrowser = false;
 
@@ -430,40 +435,70 @@ export class RequestManagement implements OnInit, OnDestroy {
 
   }
 
-  onSignatureSelected(event: Event): void {
+  async onSignatureSelected(event: Event): Promise<void> {
 
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
 
-    this.actionErrorMessage = '';
-    this.successMessage = '';
+  this.actionErrorMessage = '';
+  this.successMessage = '';
+  this.signatureCheckMessage = '';
 
-    if (!file) {
-      return;
+  if (!file) {
+    return;
+  }
+
+  const allowedTypes = ['image/png', 'image/jpeg'];
+
+  if (!allowedTypes.includes(file.type)) {
+    this.actionErrorMessage =
+      'Only PNG and JPG signature images are allowed.';
+
+    input.value = '';
+    this.selectedSignatureFile = null;
+
+    if (!this.signatureUploaded) {
+      this.releaseSignaturePreview();
     }
 
-    const allowedTypes = ['image/png', 'image/jpeg'];
+    return;
+  }
 
-    if (!allowedTypes.includes(file.type)) {
+  if (file.size > 2 * 1024 * 1024) {
+    this.actionErrorMessage =
+      'Signature image must not exceed 2 MB.';
 
-      this.actionErrorMessage =
-        'Only PNG and JPG signature images are allowed.';
+    input.value = '';
+    this.selectedSignatureFile = null;
 
+    if (!this.signatureUploaded) {
+      this.releaseSignaturePreview();
+    }
+
+    return;
+  }
+
+  this.isCheckingSignature = true;
+  this.signatureCheckMessage = 'Checking image...';
+
+  try {
+
+    const result = await this.checkSignatureImage(file);
+
+    if (!result.accepted) {
+
+      this.actionErrorMessage = result.reason;
+      this.selectedSignatureFile = null;
       input.value = '';
-      return;
 
+      if (!this.signatureUploaded) {
+        this.releaseSignaturePreview();
+      }
+
+      return;
     }
 
-    if (file.size > 2 * 1024 * 1024) {
-
-      this.actionErrorMessage =
-        'Signature image must not exceed 2 MB.';
-
-      input.value = '';
-      return;
-
-    }
-
+    // Accept the selected image.
     this.selectedSignatureFile = file;
     this.signatureUploaded = false;
 
@@ -471,14 +506,308 @@ export class RequestManagement implements OnInit, OnDestroy {
 
     this.signaturePreviewUrl = URL.createObjectURL(file);
 
+    this.signatureCheckMessage =
+      'Image passed the basic signature checks.';
+
+  } catch (error) {
+
+    console.error('OpenCV image checking failed:', error);
+
+    this.actionErrorMessage =
+      'Unable to check this image. Please try another PNG or JPG image.';
+
+    this.selectedSignatureFile = null;
+    input.value = '';
+
+    if (!this.signatureUploaded) {
+      this.releaseSignaturePreview();
+    }
+
+  } finally {
+
+    this.isCheckingSignature = false;
+    this.cdr.detectChanges();
+
+  }
+}
+
+private async getOpenCv(): Promise<any> {
+
+  if (!this.openCvPromise) {
+
+    this.openCvPromise = import('@techstark/opencv-js')
+      .then(async (module: any) => {
+
+        const cvModule = module.default ?? module;
+
+        // Newer package versions may export a Promise.
+        if (cvModule instanceof Promise) {
+          return await cvModule;
+        }
+
+        // OpenCV is already initialized.
+        if (cvModule.Mat) {
+          return cvModule;
+        }
+
+        // Wait for WebAssembly initialization.
+        await new Promise<void>((resolve, reject) => {
+
+          cvModule.onRuntimeInitialized = () => resolve();
+
+          window.setTimeout(() => {
+            reject(new Error('OpenCV initialization timed out.'));
+          }, 30000);
+
+        });
+
+        return cvModule;
+
+      });
+
   }
 
+  return this.openCvPromise;
+}
+
+
+private async checkSignatureImage(
+  file: File
+): Promise<{ accepted: boolean; reason: string }> {
+
+  const cv = await this.getOpenCv();
+
+  const imageUrl = URL.createObjectURL(file);
+  const image = new Image();
+
+  try {
+
+    image.src = imageUrl;
+    await image.decode();
+
+    // Limit image dimensions to reduce processing time.
+    const scale = Math.min(
+      1,
+      1200 / Math.max(image.naturalWidth, image.naturalHeight)
+    );
+
+    const canvas = document.createElement('canvas');
+
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+
+    const context = canvas.getContext('2d');
+
+    if (!context) {
+      throw new Error('Unable to process image.');
+    }
+
+    // Transparent backgrounds are converted to white.
+    context.fillStyle = '#ffffff';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+
+    context.drawImage(
+      image,
+      0,
+      0,
+      canvas.width,
+      canvas.height
+    );
+
+    let source: any, 
+    gray: any,
+    blurred: any, 
+    binary: any,
+    labels: any, 
+    stats: any, 
+    centroids: any;
+
+    try {
+
+      source = cv.imread(canvas);
+      gray = new cv.Mat();
+      blurred = new cv.Mat();
+      binary = new cv.Mat();
+   
+
+      // Convert to grayscale.
+      cv.cvtColor(source, gray, cv.COLOR_RGBA2GRAY);
+
+      // Reduce small image noise.
+      cv.GaussianBlur(
+        gray,
+        blurred,
+        new cv.Size(3, 3),
+        0
+      );
+
+      // Detect dark foreground marks.
+      cv.threshold(
+        blurred,
+        binary,
+        0,
+        255,
+        cv.THRESH_BINARY_INV | cv.THRESH_OTSU
+      );
+
+      const totalPixels = binary.rows * binary.cols;
+      const inkPixels = cv.countNonZero(binary);
+      const inkDensity = inkPixels / totalPixels;
+
+      // Reject nearly blank images.
+      if (inkDensity < 0.0015) {
+
+        return {
+          accepted: false,
+          reason: 'The image appears blank or contains too little handwriting.'
+        };
+
+      }
+
+      // Reject images with excessive dark content.
+      if (inkDensity > 0.20) {
+
+        return {
+          accepted: false,
+          reason: 'The image contains too much foreground content. Please upload a signature on a clean background.'
+        };
+
+      }
+
+      // Find the area containing the marks.
+      // Find the bounding rectangle of all foreground pixels
+const bounds = new cv.Rect();
+
+let minX = binary.cols;
+let minY = binary.rows;
+let maxX = -1;
+let maxY = -1;
+
+for (let y = 0; y < binary.rows; y++) {
+  for (let x = 0; x < binary.cols; x++) {
+    if (binary.ucharPtr(y, x)[0] > 0) {
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x);
+      maxY = Math.max(maxY, y);
+    }
+  }
+}
+
+if (maxX < 0 || maxY < 0) {
+  return {
+    accepted: false,
+    reason: 'No signature-like marks were detected.'
+  };
+}
+
+bounds.x = minX;
+bounds.y = minY;
+bounds.width = maxX - minX + 1;
+bounds.height = maxY - minY + 1;
+
+      const aspectRatio = bounds.width / bounds.height;
+      const widthRatio = bounds.width / canvas.width;
+      const boxDensity = inkPixels / (bounds.width * bounds.height);
+
+      // A typical signature is wider than it is tall.
+      if (aspectRatio < 1.25) {
+
+        return {
+          accepted: false,
+          reason: 'The image does not have a suitable horizontal signature shape.'
+        };
+
+      }
+
+      if (widthRatio < 0.12) {
+
+        return {
+          accepted: false,
+          reason: 'The handwritten content is too small. Please upload a clearer signature.'
+        };
+
+      }
+
+      if (boxDensity > 0.65) {
+
+        return {
+          accepted: false,
+          reason: 'The foreground is too dense to be accepted as a signature.'
+        };
+
+      }
+
+      // Count connected foreground components.
+      labels = new cv.Mat();
+      stats = new cv.Mat();
+      centroids = new cv.Mat();
+
+      const componentCount = cv.connectedComponentsWithStats(
+        binary,
+        labels,
+        stats,
+        centroids,
+        8,
+        cv.CV_32S
+      );
+
+      let meaningfulComponents = 0;
+
+      for (let i = 1; i < componentCount; i++) {
+
+        const area = stats.intAt(i, cv.CC_STAT_AREA);
+
+        if (area >= 4) {
+          meaningfulComponents++;
+        }
+
+      }
+
+      // A document containing lots of separate text marks
+      // may be rejected by this screening rule.
+      if (meaningfulComponents > 120) {
+
+        return {
+          accepted: false,
+          reason: 'Too many separate marks were detected. Please upload only your signature.'
+        };
+
+      }
+
+      return {
+        accepted: true,
+        reason: 'Image passed the basic signature checks.'
+      };
+
+    } finally {
+
+      // Release WebAssembly memory.
+      source?.delete();
+      gray?.delete();
+      blurred?.delete();
+      binary?.delete();
+      labels?.delete();
+      stats?.delete();
+      centroids?.delete();
+
+    }
+
+  } finally {
+
+    URL.revokeObjectURL(imageUrl);
+
+  }
+}
+
   uploadSignature(): void {
+    if (this.isCheckingSignature) {
+  return;
+}
 
     if (!this.selectedSignatureFile) {
 
-      this.actionErrorMessage =
-        'Please select a signature image first.';
+      this.actionErrorMessage = 'Please select a signature image first.';
 
       return;
 
@@ -491,20 +820,14 @@ export class RequestManagement implements OnInit, OnDestroy {
     this.actionErrorMessage = '';
     this.successMessage = '';
 
-    this.http.post(
-      `${this.adminUrl}/signature`,
-      formData
-    ).subscribe({
+    this.http.post(`${this.adminUrl}/signature`,formData).subscribe({
 
       next: (response: any) => {
 
         this.isUploadingSignature = false;
         this.signatureUploaded = true;
         this.selectedSignatureFile = null;
-
-        this.successMessage =
-          response.message || 'Signature uploaded successfully.';
-
+        this.successMessage = response.message || 'Signature uploaded successfully.';
         this.cdr.detectChanges();
 
       },
@@ -513,10 +836,7 @@ export class RequestManagement implements OnInit, OnDestroy {
 
         this.isUploadingSignature = false;
         this.signatureUploaded = false;
-
-        this.actionErrorMessage =
-          error.error?.message || 'Unable to upload the signature.';
-
+        this.actionErrorMessage = error.error?.message || 'Unable to upload the signature.';
         this.cdr.detectChanges();
 
       }
@@ -547,16 +867,13 @@ export class RequestManagement implements OnInit, OnDestroy {
 
     if (!this.signatureUploaded) {
 
-      this.actionErrorMessage =
-        'Please upload your admin signature before approving a request.';
+      this.actionErrorMessage = 'Please upload your admin signature before approving a request.';
 
       return;
 
     }
 
-    const confirmed = confirm(
-      `Are you sure you want to approve the request from ${request.employeeName}?`
-    );
+    const confirmed = confirm(`Are you sure you want to approve the request from ${request.employeeName}?`);
 
     if (!confirmed) {
       return;
@@ -566,19 +883,14 @@ export class RequestManagement implements OnInit, OnDestroy {
     this.actionErrorMessage = '';
     this.successMessage = '';
 
-    this.http.post(
-      `${this.adminUrl}/requestsapprove?id=${request.letterRequestId}`,
+    this.http.post(`${this.adminUrl}/requestsapprove?id=${request.letterRequestId}`,
       {}
     ).subscribe({
 
       next: (response: any) => {
 
         this.isProcessing = false;
-
-        this.successMessage =
-          response.message ||
-          'Request approved and signed PDF generated successfully.';
-
+        this.successMessage = response.message || 'Request approved and signed PDF generated successfully.';
         this.closeDetails();
         this.loadRequests();
 
@@ -637,8 +949,7 @@ export class RequestManagement implements OnInit, OnDestroy {
 
     if (!reason) {
 
-      this.actionErrorMessage =
-        'Please enter a rejection reason.';
+      this.actionErrorMessage ='Please enter a rejection reason.';
 
       return;
 
@@ -646,8 +957,7 @@ export class RequestManagement implements OnInit, OnDestroy {
 
     if (reason.length > 1000) {
 
-      this.actionErrorMessage =
-        'The rejection reason must not exceed 1000 characters.';
+      this.actionErrorMessage = 'The rejection reason must not exceed 1000 characters.';
 
       return;
 

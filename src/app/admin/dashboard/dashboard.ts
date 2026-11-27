@@ -49,8 +49,7 @@ interface DailyActivity {
 })
 export class AdminDashboard implements OnInit {
 
-  private readonly apiUrl =
-    'https://localhost:7103/api/Admin/requests';
+  private readonly apiUrl = 'https://localhost:7103/api/Admin/requests';
 
   adminName = 'Administrator';
   adminEmail = '';
